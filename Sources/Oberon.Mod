@@ -59,6 +59,8 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
       pos*: LONGINT
     END;
 
+    RetVal*: INTEGER;
+
     CurFnt*: Fonts.Font;
     CurCol*, CurOff*: INTEGER;
     NofTasks*: INTEGER;
@@ -339,12 +341,16 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
   (*command interpretation*)
 
   PROCEDURE SetPar*(F: Display.Frame; T: Texts.Text; pos: LONGINT);
-  BEGIN Par.vwr := Viewers.This(F.X, F.Y); Par.frame := F; Par.text := T; Par.pos := pos
+  BEGIN Par.vwr := Viewers.This(F.X, F.Y); Par.frame := F; Par.text := T; Par.pos := pos; RetVal := 0
   END SetPar;
 
   PROCEDURE ClearPar*;
-  BEGIN Par.vwr := NIL; Par.frame := NIL; Par.text := NIL; Par.pos := 0
+  BEGIN Par.vwr := NIL; Par.frame := NIL; Par.text := NIL; Par.pos := 0; RetVal := 0
   END ClearPar;
+
+  PROCEDURE SetRetVal*(retval: INTEGER);
+  BEGIN RetVal := retval
+  END SetRetVal;
 
   PROCEDURE Call*(F: Display.Frame; T: Texts.Text; pos: LONGINT; new: BOOLEAN);  (*command*)
     VAR R: Texts.Reader; i, res: INTEGER; ch: CHAR; s: ARRAY 32 OF CHAR;
@@ -366,6 +372,7 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
          | Modules.badcmd: Texts.WriteString(W, s); Texts.WriteString(W, " invalid command")
          | Modules.nomod: Texts.WriteString(W, Modules.importing); Texts.WriteString(W, " module not found")
         END ;
+        RetVal := 0FFH;
         Texts.WriteLn(W); Texts.Append(Log, W.buf)
       END
     END

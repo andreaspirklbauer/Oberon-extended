@@ -668,6 +668,22 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 15.5.20 Extended O
     Texts.Append(Oberon.Log, W.buf)
   END ShowFonts;
 
+  PROCEDURE DoCommands*;
+    VAR pos: INTEGER; S: Texts.Scanner; run: BOOLEAN;
+  BEGIN pos := Oberon.Par.pos; run := TRUE;
+    WHILE run DO
+      run := FALSE;
+      Texts.OpenScanner(S, Oberon.Par.text, pos); Texts.Scan(S);
+      IF S.class = Texts.Name THEN
+        Oberon.Call(Oberon.Par.frame, Oberon.Par.text, pos, FALSE);
+        IF Oberon.RetVal = 0 THEN
+          WHILE (~S.eot) & ~((S.class = Texts.Char) & (S.c = "~")) DO Texts.Scan(S) END;
+          pos := Texts.Pos(S); run := ~S.eot
+        END
+      END
+    END
+  END DoCommands;
+
   PROCEDURE Trap(VAR a: INTEGER; b, c, d: INTEGER);
     VAR u, v, w: INTEGER; mod: Modules.Module;
   BEGIN u := SYSTEM.REG(LNK);  (*return address deposited in register LNK by the trap (=BLR TR) instruction*)

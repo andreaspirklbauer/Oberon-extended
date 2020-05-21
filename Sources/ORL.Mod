@@ -268,6 +268,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 5.5.20 Extended Oberon*)
         WHILE i < AllocPtr DO SYSTEM.GET(i, x); Files.WriteInt(R, x); INC(i, 4) END ;
         Texts.WriteInt(W, AllocPtr - Start, 7); Files.Register(F)
       ELSE
+        Oberon.SetRetVal(1);
         Texts.WriteString(W, "Link error:  "); Texts.WriteString(W, importing);
         IF res = nofile THEN Texts.WriteString(W, " module not found")
         ELSIF res = badversion THEN Texts.WriteString(W, " bad version")
@@ -277,7 +278,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 5.5.20 Extended Oberon*)
         ELSIF res = nospace THEN Texts.WriteString(W, " insufficient space")
         END
       END
-    ELSE Texts.WriteString(W, "Usage: ORL.Link [module...] topmodule")
+    ELSE Texts.WriteString(W, "Usage: ORL.Link [module...] topmodule"); Oberon.SetRetVal(1)
     END ;
     Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf); root := NIL
   END Link;
@@ -300,9 +301,9 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 5.5.20 Extended Oberon*)
           WHILE i < Disk.SectorLength DO buf[i] := 0; INC(i) END ;
           Disk.PutSector(secno*29, buf)
         END
-      ELSE Texts.WriteString(W, " not found")
+      ELSE Texts.WriteString(W, " not found"); Oberon.SetRetVal(1)
       END
-    ELSE Texts.WriteString(W, "Usage: ORL.Load M.bin")
+    ELSE Texts.WriteString(W, "Usage: ORL.Load M.bin"); Oberon.SetRetVal(1)
     END ;
     Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
   END Load;
