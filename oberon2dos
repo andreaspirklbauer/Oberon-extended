@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# oberon2dos  -- convert an Oberon file (only CR as line ending) to a DOS file (CR + LF as line endings)
+#             -- we also allow files which have only LF as line ending and convert them to a DOS file (CR + LF)
+#
+# Sample workflow:
+#   1) ./pcsend.sh File.Mod                      (export file from Oberon to DOS or MacOS)
+#   2) ./oberon2dos File.Mod Sources/File.Mod    (convert file to DOS-style)
+#
+#   Converting a file from Oberon-style (uses only CR as line endings) to DOS-style (uses CRLF as line
+#   endings) ensures that the file can be properly displayed on web sites such as www.github.com.
+#
+# See also:
+#   dos2oberon   (converts a DOS file to Oberon format)
+#
+# Notes:
+#   CR  = 13 (decimal) = 0D (hex) = 15C (octal) = \r (Perl) 
+#   LF  = 10 (decimal) = 0A (hex) = 12C (octal) = \n (Perl)
+#   TAB = 09 (decimal) = 09 (hex) = 11C (octal) = \t (Perl)
+#   SUB = 26 (decimal) = 1A (hex) = 32C (octal) = ?  (Perl)
+#
+#   We use Perl, because on some host systems (e.g., MacOS), the corresponding sed command does not work
+#
+# Author: Andreas Pirklbauer
+#
+
+# quit unless we have the correct number of command line arguments
+$num_args = $#ARGV + 1;
+if ($num_args != 2) {
+    print "Usage: oberon2dos inputfile outputfile\n";
+    exit;
+}
+
+# get the two command line arguments
+$inputfile=$ARGV[0];
+$outputfile=$ARGV[1];
+
+open(FILE, "$inputfile") || die "inputfile not found";
+my @lines = <FILE>;
+close(FILE);
+
+my @newlines;
+foreach(@lines) {
+    # convert all CRLF (\r\n) to CR (\r) only, so we no longer have any CRLF in the file afterwards
+    $_ =~ s/\r\n/\r/g;
+    # convert all LF (\n) to CR (\r) only, so we no longer have any LF in the file afterwards
+    $_ =~ s/\n/\r/g;
+    # convert all CR (\r) to CRLF (\r\n), so we ONLY have CRLF in the file afterwards
+    $_ =~ s/\r/\r\n/g;
+    # replace a TAB (\t) with two spaces (\s\s)
+    $_ =~ s/\t/  /g;
+    # push output line
+    push(@newlines,$_);
+}
+
+open(FILE, ">$outputfile") || die "File not found";
+print FILE @newlines;
+close(FILE);
+

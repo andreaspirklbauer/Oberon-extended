@@ -1,0 +1,18 @@
+2020-02-12 Display, Viewers, Oberon, System - restore (partial) backward compatibility with the original Oberon system
+2020-02-13 Viewers, Oberon, TextFrames, System - move FocusViewer to Viewers so it stays current when switching display areas
+2020-02-13 ORP - fixed typo in ORP.ParamList
+2020-02-20 ORB - re-allow reusing canonical module names and aliases whenever possible (makes compiler less restrictive)
+2020-02-25 FontTool - added
+2020-02-26 ORG - removed 64KB restriction for global variables, ORG.Put1a corrected
+2020-02-27 Modules, ORL - use constants instead of literals in fixup code
+2020-03-02 ORP - ORP.ImportList updated
+2020-03-06 ORB - Updated ORB.ThisModule for Project Oberon 2013 and Extended Oberon
+2020-03-09 Input - Move character, text and cursor related constants to module Input
+2020-03-12 Modules, ORL, ORG, ORTool - Use 6 bits for module number (mno) in all instructions
+2020-03-13 Kernel, Modules, ORL, ORG, ORTool, System - Eliminate module table starting at MTOrg
+2020-03-17 Modules, ORL, ORG, System - Make pre-linked binaries relocatable (ORL.Relocate, ORG.BuildTD)
+2020-03-22 Disk, inner core modules - Modules Disk and Kernel are now separate, FileDir.Atrributes added
+2020-04-27 ORG, ORB, ORP constants factored out, procedure PutPair added to generate MOV'/IOR instruction pair
+2020-05-15 Kernel - fix issue in Kernel.Mark with illegal memory access to p-4 when pointer p happens to be 0
+2020-05-15 Oberon0 - clear entire root page of file directory in Oberon0.ClearDirectory, except for DirMark
+2020-05-15 ORC - change timeout code in ORC.Rec and ORC.Flush to avoid issues with signed arithmetic
