@@ -448,7 +448,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 15.5.20 Extended O
       IF Modules.res = Modules.noref THEN Texts.WriteString(W, " unloading"); EndLine
       ELSE
         IF hide & (Modules.res > Modules.clients) THEN Texts.WriteString(W, " removing from module list")
-        ELSE Texts.WriteString(W, " unloading failed");
+        ELSE Texts.WriteString(W, " unloading failed"); Oberon.SetRetVal(1);
           IF Modules.res = Modules.clients THEN M := NIL; Modules.FindClients(WriteClient, res) END
         END ;
         EndLine; WriteReferences
@@ -553,7 +553,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 15.5.20 Extended O
               Files.Set(Rf, f, 0); Files.Set(Rg, g, 0); Files.Read(Rf, ch);
               WHILE ~Rf.eof DO Files.Write(Rg, ch); Files.Read(Rf, ch) END;
               Files.Register(g)
-            ELSE Texts.WriteString(W, " failed")
+            ELSE Texts.WriteString(W, " failed"); Oberon.SetRetVal(1)
             END ;
             EndLine
           END
@@ -576,7 +576,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 15.5.20 Extended O
           IF S.class = Texts.Name THEN
             Texts.WriteString(W, name); Texts.WriteString(W, " => "); Texts.WriteString(W, S.s);
             Texts.WriteString(W, " renaming"); Files.Rename(name, S.s, res);
-            IF res > 1 THEN Texts.WriteString(W, " failed") END;
+            IF res > 1 THEN Texts.WriteString(W, " failed"); Oberon.SetRetVal(1) END;
             EndLine
           END
         END
@@ -592,7 +592,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 15.5.20 Extended O
     WHILE S.class = Texts.Name DO
       Texts.WriteString(W, S.s); Texts.WriteString(W, " deleting");
       Files.Delete(S.s, res);
-      IF res # 0 THEN Texts.WriteString(W, " failed") END;
+      IF res # 0 THEN Texts.WriteString(W, " failed"); Oberon.SetRetVal(1) END;
       EndLine; Texts.Scan(S)
     END
   END DeleteFiles;
