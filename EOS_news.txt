@@ -1,0 +1,38 @@
+2020-02-12 Display, Viewers, Oberon, System - Restore (partial) backward compatibility with the original Oberon system
+2020-02-13 Viewers, Oberon, TextFrames, System - Move FocusViewer to Viewers so it stays current when switching display areas
+2020-02-13 ORP - Fix typo in ORP.ParamList
+2020-02-20 ORB - Re-allow reusing canonical module names and aliases whenever possible (makes compiler less restrictive)
+2020-02-25 FontTool - Module FontTool added
+2020-02-26 ORG - Remove 64KB restriction for global variables, ORG.Put1a corrected
+2020-02-27 Modules, ORL - Use constants instead of literals in fixup code
+2020-03-02 ORP - ORP.ImportList updated
+2020-03-06 ORB - ORB.ThisModule updated for Project Oberon 2013 and Extended Oberon
+2020-03-09 Input - Move character, text and cursor related constants to module Input
+2020-03-12 Modules, ORL, ORG, ORTool - Use 6 bits for module number (mno) in all instructions
+2020-03-13 Kernel, Modules, ORL, ORG, ORTool, System - Eliminate module table starting at MTOrg
+2020-03-17 Modules, ORL, ORG, System - Make pre-linked binaries relocatable (ORL.Relocate, ORG.BuildTD)
+2020-03-22 Disk, inner core modules - Modules Disk and Kernel are now separate, FileDir.Atrributes added
+2020-04-27 ORG, ORB, ORP constants factored out, procedure PutPair added to generate MOV'/IOR instruction pair
+2020-05-15 Kernel - Fix issue in Kernel.Mark with illegal memory access to p-4 when pointer p happens to be 0
+2020-05-15 Oberon0 - Clear entire root page of file directory in Oberon0.ClearDirectory, except for DirMark
+2020-05-15 ORC - Change timeout code in ORC.Rec and ORC.Flush to avoid issues with signed arithmetic
+2020-06-01 Oberon - Oberon.Batch, Oberon.Return, Oberon.Par.res added
+2020-06-13 ORC, PCLink0 - Add REQ-ACK handshake after sending SND or REC, and after sending or receiving a packet stream
+2020-06-18 Build.Tool - Allow building an entire Oberon system on a remote target system with a single Oberon.Batch command
+2020-07-17 ORL - Improve code in ORL.RelocateLoaded to mark an instruction as fixed up by setting the B bit
+2020-08-01 ORG - Set the register index in ORG.Set correctly when a set range in a set literal uses variable bounds
+2020-08-02 ORG, System - Allow index ranges incorporating a variable expression in ORG.Index, add System.Batch facility
+2020-08-06 ORP - Report a compile-time error in ORP.RecordType if a field of a private record is exported
+2020-08-27 Kernel - Use correct increment in Kernel.Mark when traversing pointer offsets for arrays of records
+2020-08-30 Kernel - Rely on correct rounding of size in Kernel.New, prevent accessing memory locations > heapLim in Kernel.Collect
+2020-09-01 Fonts - Replace all calls to module SYSTEM with array and pointer operations
+2020-10-24 Oberon, System - Oberon.Batch (but not System.Batch) invokes the garbage collector after each executed command
+2020-11-01 ORG, ORB - Restrict the type case statement such that type loopholes are no longer possible
+2020-11-12 ORP - Allow elements of a structure as numeric case expressions in all cases
+2020-12-01 ORL - Don't provide a hint to the bootloader for Kernel.MemLim and Kernel.stackOrg anymore
+2020-12-02 Disk - Enlarge boot area from sectors 2-63 (62KB) to sectors 2-159 (158KB) to accomodate entire pre-linked Oberon systems
+2020-12-12 Modules - Add procedure Modules.SetFinalizer to set a module finalization sequence to be executed prior to unloading
+2020-12-30 TextFrames - TextFrames.Copy now produces an exact copy of the text frame, including vertical offset from baseline
+2020-12-31 Modules, ORS, ORG, ORP, ORL, ORX, ORTool, Oberon0 - Add module finalization as a language construct (symbol FINAL)
+2021-01-24 ORTool - Decode FLR, FLT, RTI, STI, CLI instructions
+2021-04-12 In, Out - In added, Out updated

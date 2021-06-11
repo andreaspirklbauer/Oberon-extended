@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+#
+# dos2oberon  -- convert a DOS file (CR + LF as line ending) to an Oberon file (only CR as line endings)
+#             -- we also allow files which have only LF as line ending and convert them to an Oberon file (only CR)
+#
+# Sample workflow:
+#   1) ./dos2oberon File.Mod File.Mod            (convert file to Oberon-style)
+#   2) ./pcreceive.sh File.Mod                   (import this file into Oberon)
+#
+#   Converting a file from DOS-style (uses CRLF as line endings) to Oberon-style (uses only CR as line
+#   endings) also make the following conversions:
+#     - two spaces at the beginning of a line are converted to a TAB
+#     - two spaces in front of Oberon comments enclosed by (* and *) are converted to a TAB.
+#   which make them look nice in the Oberon system.
+#
+# See also:
+#   oberon2dos   (converts an Oberon file to DOS format)
+#
+# Notes:
+#   CR  = 13 (decimal) = 0D (hex) = 15C (octal) = \r (Perl) 
+#   LF  = 10 (decimal) = 0A (hex) = 12C (octal) = \n (Perl)
+#   TAB = 09 (decimal) = 09 (hex) = 11C (octal) = \t (Perl)
+#   SUB = 26 (decimal) = 1A (hex) = 32C (octal) = ?  (Perl)
+#
+#   We use Perl, because on some host systems (e.g., MacOS), the corresponding sed command does not work
+#
+# Author: Andreas Pirklbauer
+#
+
+# quit unless we have the correct number of command line arguments
+$num_args = $#ARGV + 1;
+if ($num_args != 2) {
+    print "Usage: dos2oberon inputfile outputfile\n";
+    exit;
+}
+
+# get the two command line arguments
+$inputfile=$ARGV[0];
+$outputfile=$ARGV[1];
+
+open(FILE, "$inputfile") || die "inputfile not found";
+my @lines = <FILE>;
+close(FILE);
+
+my $x = "  " ;    # 2 spaces
+my $y = "\t" ;    # 1 TAB
+
+my @newlines;
+foreach(@lines) {
+    # convert all CRLF (\r\n) to CR (\r) only, so we no longer have any CRLF in the file afterwards
+    $_ =~ s/\r\n/\r/g;
+    # convert all LF (\n) to CR (\r) only, so we no longer have any LF in the file afterwards
+    $_ =~ s/\n/\r/g;
+    # replace two spaces with one TAB (\t), but only at the beginning of a ($_ =~ s/  /\t/g could cause trouble inside strings!)
+    while ($_ =~ s/^($y*)$x/$1$y/) {}
+    # replace 2 spaces before a comment by a TAB
+    $_ =~ s/$x(\(\*.*\**\))/$y$1/g;       
+    # push output line
+    push(@newlines,$_);
+}
+
+open(FILE, ">$outputfile") || die "File not found";
+print FILE @newlines;
+close(FILE);
+
