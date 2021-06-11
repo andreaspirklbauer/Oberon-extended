@@ -36,3 +36,4 @@
 2020-12-31 Modules, ORS, ORG, ORP, ORL, ORX, ORTool, Oberon0 - Add module finalization as a language construct (symbol FINAL)
 2021-01-24 ORTool - Decode FLR, FLT, RTI, STI, CLI instructions
 2021-04-12 In, Out - In added, Out updated
+2021-06-11 ORB - Allow hidden re-imports to coexist with declarations of identifiers or module aliases with the same name
