@@ -1,10 +1,10 @@
-MODULE Oberon0; (*Oberon-0 command interpreter / AP 12.12.20 Extended Oberon*)
+MODULE Oberon0; (*Oberon-0 command interpreter / AP 1.5.22 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, FileDir, Files, Modules, RS232, PCLink0;
   CONST swi = -60; (*switches*)
     stat = -52; (*RS-232*)
     REQ = 20H; REC = 21H; SND = 22H; ACK = 10H;
     screenbase = 0E7F00H; screensize = 1024 * 768 DIV 8; (*1024 x 768 pixel monocolor display*)
-    BootSec = 2; maxCode = 8000; TR = 13;
+    BootSec = 2; BootSize = 192; maxCode = 8000; TR = 13;
 
   VAR pat: ARRAY 32 OF CHAR;
 
@@ -79,7 +79,7 @@ MODULE Oberon0; (*Oberon-0 command interpreter / AP 12.12.20 Extended Oberon*)
     WHILE M # NIL DO RS232.Line;
       IF M.name[0] # 0X THEN
         RS232.SendStr(M.name); RS232.SendInt(M.num); RS232.SendStr("  ");
-        RS232.SendHex(ORD(M)); RS232.SendHex(M.code); RS232.SendInt(M.refcnt)
+        RS232.SendHex(ORD(M)); RS232.SendHex(M.prg); RS232.SendInt(M.refcnt)
       ELSE RS232.SendStr("---")
       END ;
       M := M.next
@@ -236,8 +236,10 @@ MODULE Oberon0; (*Oberon-0 command interpreter / AP 12.12.20 Extended Oberon*)
       END ;
       IF i > 0 THEN
         WHILE i < Disk.SectorLength DO buf[i] := 0; INC(i) END ;
-        Disk.PutSector(secno*29, buf)
-      END
+        Disk.PutSector(secno*29, buf); INC(secno)
+      END ;
+      FOR i := 0 TO Disk.SectorLength-1 DO buf[i] := 0 END ;
+      WHILE secno < BootSize DO Disk.PutSector(secno*29, buf); INC(secno) END
     ELSE RS232.SendInt(-1) (*file not found*)
     END
   END LoadBoot;
@@ -268,7 +270,7 @@ MODULE Oberon0; (*Oberon-0 command interpreter / AP 12.12.20 Extended Oberon*)
     Files.ReadInt(R, codelen);
     IF codelen > LEN(code) THEN res := Modules.nospace
     ELSE n := 0;
-      WHILE n < codelen DO Files.ReadInt(R, data); code[n] := data; INC(n) END ; (*code*)
+      WHILE n < codelen DO Files.ReadInt(R, data); code[n] := data; INC(n) END ; (*program code*)
       Files.ReadString(R, name);
       WHILE name[0] # 0X DO Files.ReadInt(R, data); Files.ReadString(R, name) END ; (*commands*)
       Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n*4); (*entries*)

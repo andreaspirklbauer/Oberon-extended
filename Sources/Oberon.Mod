@@ -1,11 +1,12 @@
-MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 1.4.21 Extended Oberon*)
+MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 1.9.22 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Files, Modules, Input, Display, Viewers, Fonts, Texts;
 
   CONST (*message ids*)
     consume* = 0; track* = 1; defocus* = 0; neutralize* = 1; mark* = 2;
     off = 0; idle = 1; active = 2;  (*task states*)
     BasicCycle = 20;
-    TAB = Input.TAB; CR = Input.CR; ESC = Input.ESC; SETSTAR = 1AX;
+    TaskPeriod = 500;  (*milliseconds*)
+    TAB = Input.TAB; CR = Input.CR; LF = Input.LF; ESC = Input.ESC; SETSTAR = 1AX; LNK = 15;
 
   TYPE Painter* = PROCEDURE (x, y: INTEGER);
     Marker* = RECORD Fade*, Draw*: Painter END ;
@@ -64,11 +65,12 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
     CurCol*, CurOff*: INTEGER;
     NofTasks*: INTEGER;
 
-    CurTask: Task;
+    CurTask, DeferTask: Task;
     DW, DH, CL: INTEGER;
     ActCnt: INTEGER; (*action count for garbage collector*)
     Mod: Modules.Module;
 
+    defer: BOOLEAN; last: INTEGER;
     W: Texts.Writer;
 
   (*user identification*)
@@ -373,7 +375,7 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
   PROCEDURE Skip(VAR S: Texts.Scanner; VAR len: INTEGER);  (*skip and count white spaces*)
     VAR ch: CHAR; i: INTEGER;
   BEGIN Texts.Read(S, ch); i := 0;
-    WHILE (ch = " ") OR (ch = TAB) OR (ch = CR) DO
+    WHILE (ch = " ") OR (ch = TAB) OR (ch = CR) OR (ch = LF) DO
       IF ch = CR THEN INC(S.line) END ;
       Texts.Read(S, ch); INC(i)
     END ;
@@ -506,6 +508,67 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
     SYSTEM.LDREG(14, Kernel.stackOrg); (*reset stack pointer*) Loop
   END Reset;
 
+  PROCEDURE Trap(VAR a: INTEGER; b, c, d: INTEGER);
+    VAR u, v, w: INTEGER; mod: Modules.Module;
+  BEGIN u := SYSTEM.REG(LNK);  (*return address, deposited in register LNK by the trap (BLR TR) instruction*)
+    SYSTEM.GET(u - 4, v);  (*trap instruction, contains code position and trap number*)
+    w := v DIV 10H MOD 10H;  (*trap number*)
+    IF w = 0 THEN Kernel.New(a, b, c, d)
+    ELSE (*trap*)
+      IF Log # NIL THEN
+        IF defer THEN (*defer trap handling*) last := u; Install(DeferTask)
+        ELSE defer := TRUE;
+          Texts.WriteLn(W); Texts.WriteString(W, "  pos ");
+          Texts.WriteInt(W, v DIV 100H MOD 10000H, 4);  (*code position*)
+          Texts.WriteString(W, "  TRAP"); Texts.WriteInt(W, w, 4); mod := Modules.root;
+          WHILE (mod # NIL) & ((u < mod.prg) OR (u >= mod.imp)) DO mod := mod.next END ;
+          IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
+          Texts.WriteString(W, " at"); Texts.WriteHex(W, u); Texts.WriteLn(W); Texts.Append(Log, W.buf);
+          defer := FALSE
+        END
+      END ;
+      Collect(0); Reset
+    END
+  END Trap;
+
+  PROCEDURE Abort;
+    VAR u: INTEGER; mod: Modules.Module;
+  BEGIN
+    IF Log # NIL THEN
+      u := SYSTEM.REG(LNK);  (*return address, deposited in register LNK by the abort (BL 0) instruction*)
+      IF defer THEN (*defer abort handling*) last := u; Install(DeferTask)
+      ELSE defer := TRUE;
+        Texts.WriteLn(W); Texts.WriteString(W, "  ABORT  "); mod := Modules.root;
+        WHILE (mod # NIL) & ((u < mod.prg) OR (u >= mod.imp)) DO mod := mod.next END ;
+        IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
+        Texts.WriteString(W, " at"); Texts.WriteHex(W, u); Texts.WriteLn(W); Texts.Append(Log, W.buf);
+        defer := FALSE
+      END
+    END ;
+    Collect(0); Reset
+  END Abort;
+
+  PROCEDURE Deferred;  (*handle trap/abort as soon as the garbage collector has freed up enough heap space*)
+    VAR v, w, pos: INTEGER; mod: Modules.Module;
+  BEGIN
+    IF (Kernel.allocated < Kernel.heapLim - Kernel.heapOrg - 10000H) & (Log # NIL) THEN Remove(DeferTask);
+      SYSTEM.GET(last - 4, v);  (*trap instruction, contains code position and trap number*)
+      pos := v DIV 100H MOD 10000H;  (*code position*)
+      Texts.WriteLn(W);
+      IF pos # 0 THEN
+        w := v DIV 10H MOD 10H;  (*trap number*)
+        Texts.WriteString(W, "  pos "); Texts.WriteInt(W, pos, 4);
+        Texts.WriteString(W, "  RECURSIVE TRAP"); Texts.WriteInt(W, w, 4)
+      ELSE Texts.WriteString(W, "  RECURSIVE ABORT  ")
+      END ;
+      mod := Modules.root;
+      WHILE (mod # NIL) & ((last < mod.prg) OR (last >= mod.imp)) DO mod := mod.next END ;
+      IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
+      Texts.WriteString(W, " at"); Texts.WriteHex(W, last); Texts.WriteLn(W); Texts.Append(Log, W.buf);
+      defer := FALSE
+    END
+  END Deferred;
+
 BEGIN User[0] := 0X;
   Arrow.Fade := FlipArrow; Arrow.Draw := FlipArrow;
   Star.Fade := FlipStar; Star.Draw := FlipStar;
@@ -516,6 +579,9 @@ BEGIN User[0] := 0X;
 
   ActCnt := 0; CurTask := NewTask(CollectGarbage, 1000); Install(CurTask);
   Texts.OpenWriter(W); Log := NIL;
+
+  defer := FALSE; DeferTask := NewTask(Deferred, TaskPeriod);
+  Kernel.Install(SYSTEM.ADR(Trap), Kernel.TrapAdr); Kernel.Install(SYSTEM.ADR(Abort), 0);
 
   IF Modules.importing = "Oberon" THEN (*loaded by the regular loader*)
     Modules.Load("System", Mod); Mod := NIL; Loop

@@ -1,4 +1,4 @@
-MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 31.12.20 Extended Oberon*)
+MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 1.10.21 Extended Oberon*)
   IMPORT SYSTEM, Texts, Oberon;
 
 (* Oberon Scanner does lexical analysis. Input is Oberon-Text, output is
@@ -25,7 +25,7 @@ MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 31.12.20 Extend
     if* = 32; while* = 34; repeat* = 35; case* = 36; for* = 37;
     comma* = 40; colon* = 41; becomes* = 42; upto* = 43; rparen* = 44;
     rbrak* = 45; rbrace* = 46; then* = 47; of* = 48; do* = 49;
-    to* = 50; by* = 51; semicolon* = 52; end* = 53; bar* = 54;
+    to* = 50; by* = 51; semicolon* = 52; bar* = 53; end* = 54;
     else* = 55; elsif* = 56; until* = 57; return* = 58;
     array* = 60; record* = 61; pointer* = 62; const* = 63; type* = 64;
     var* = 65; procedure* = 66; begin* = 67; import* = 68; module* = 69; final* = 70; eot = 71;

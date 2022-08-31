@@ -1,8 +1,9 @@
-MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
+MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 7.8.22 Extended Oberon*)
   IMPORT SYSTEM, Files, Modules, Texts, Oberon, ORB;
   CONST TAB = 09X;  (*copied from Input for use as cross development tool*)
   VAR W: Texts.Writer;
     mnemo0, mnemo1: ARRAY 16, 4 OF CHAR;  (*mnemonics*)
+    typlev: INTEGER;
 
   PROCEDURE Read(VAR R: Files.Rider; VAR x: INTEGER);
     VAR b: BYTE;
@@ -12,11 +13,21 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
 
   PROCEDURE ReadType(VAR R: Files.Rider);
     VAR key, len, size, off: INTEGER;
-      ref, class, form, readonly: INTEGER;
+      ref, orgref, class, form, readonly: INTEGER;
       name, modname: ARRAY 32 OF CHAR;
-  BEGIN Read(R, ref); Texts.Write(W, " "); Texts.Write(W, "[");
+  BEGIN INC(typlev); Read(R, ref); Texts.Write(W, " "); Texts.WriteLn(W);
+    FOR off := 0 TO typlev DO Texts.Write(W, 09X) END ;
+    Texts.Write(W, "[");
     IF ref < 0 THEN Texts.Write(W, "^"); Texts.WriteInt(W, -ref, 1)
     ELSE Texts.WriteInt(W, ref, 1);
+      IF ref > 0 THEN  (*named type*)
+        Files.ReadString(R, modname);
+        IF modname[0] # 0X THEN
+          Files.ReadInt(R, key); Files.ReadString(R, name); Read(R, orgref);
+          Texts.Write(W, " "); Texts.WriteString(W, modname); Texts.Write(W, "."); Texts.WriteString(W, name);
+          Texts.WriteHex(W, key)
+        END
+      END ;
       Read(R, form); Texts.WriteString(W, "  form = "); Texts.WriteInt(W, form, 1);
       IF form = ORB.Pointer THEN ReadType(R)
       ELSIF form = ORB.Array THEN
@@ -47,15 +58,9 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
           ReadType(R); Read(R, class)
         END ;
         Texts.Write(W, ")")
-      END ;
-      Files.ReadString(R, modname);
-      IF modname[0] # 0X THEN
-        Files.ReadInt(R, key); Files.ReadString(R, name);
-        Texts.Write(W, " "); Texts.WriteString(W, modname); Texts.Write(W, "."); Texts.WriteString(W, name);
-        Texts.WriteHex(W, key)
       END
     END ;
-    Texts.Write(W, "]")
+    Texts.Write(W, "]"); DEC(typlev)
   END ReadType;
 
   PROCEDURE DecSym*;  (*decode symbol file*)
@@ -73,17 +78,11 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
         Files.ReadString(R, name); Texts.WriteString(W, name); Texts.WriteHex(W, k);
         Read(R, class); Texts.WriteInt(W, class, 3);  (*sym file version*)
         IF class = ORB.versionkey THEN
-          Texts.WriteLn(W); Read(R, class);
+          Texts.WriteLn(W); Read(R, class); typlev := 0;
           WHILE class # 0 DO
             Texts.WriteInt(W, class, 4); Files.ReadString(R, name); Texts.Write(W, " "); Texts.WriteString(W, name);
             ReadType(R);
-            IF class = ORB.Typ THEN
-              Texts.Write(W, "("); Read(R, class);
-              WHILE class # 0 DO  (*pointer base fixup*)
-                Texts.WriteString(W, " ->"); Texts.WriteInt(W, class, 4); Read(R, class)
-              END ;
-              Texts.Write(W, ")")
-            ELSIF (class = ORB.Const) OR (class = ORB.Var) THEN
+            IF (class = ORB.Const) OR (class = ORB.Var) THEN
               Files.ReadNum(R, k); Texts.WriteInt(W, k, 5);  (*Reals, Strings!*)
             END ;
             Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
@@ -174,7 +173,7 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
   END Write;
 
   PROCEDURE DecObj*;  (*decode object file*)
-    VAR class, i, n, key, size, adr, data, code: INTEGER;
+    VAR class, i, n, key, size, adr, data, prg: INTEGER;
       ch: CHAR;
       name: ARRAY 32 OF CHAR;
       fixorgP, fixorgD, nofP, nofD: LONGINT;
@@ -194,7 +193,7 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
           Files.ReadInt(R, key); Texts.WriteHex(W, key); Texts.WriteLn(W);
           Files.ReadString(R, name)
         END ;
-        Texts.WriteString(W, "data"); Files.ReadInt(R, data); Texts.WriteInt(W, data, 6); Texts.WriteLn(W);
+        Texts.WriteString(W, "variables"); Files.ReadInt(R, data); Texts.WriteInt(W, data, 6); Texts.WriteLn(W);
         Texts.WriteString(W, "strings"); Files.ReadInt(R, n); Texts.WriteInt(W, n, 6); Texts.WriteLn(W);
         i := 0;
         WHILE i < n DO Files.Read(R, ch); Texts.Write(W, ch); INC(i) END ;
@@ -204,7 +203,7 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
         WHILE i < n DO Files.ReadInt(R, data); Texts.WriteHex(W, data); INC(i) END ;
         Texts.WriteLn(W);
         (*first pass*)
-        Files.ReadInt(R, n); code := Files.Pos(R); Files.Set(R, F, code + n*4);  (*code*)
+        Files.ReadInt(R, n); prg := Files.Pos(R); Files.Set(R, F, prg + n*4);  (*program code*)
         Files.ReadString(R, name);
         WHILE name[0] # 0X DO Files.ReadInt(R, data); Files.ReadString(R, name) END ;  (*commands*)
         Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n*4);  (*entries*)
@@ -214,23 +213,23 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
         WHILE data >= 0 DO Files.ReadInt(R, data) END ;  (*procedure variable references*)
         Files.ReadInt(R, fixorgP); Files.ReadInt(R, fixorgD);
         (*record fixup positions*)
-        adr := code + fixorgP*4; nofP := 0;
-        WHILE adr # code DO
+        adr := prg + fixorgP*4; nofP := 0;
+        WHILE adr # prg DO
           Files.Set(R, F, adr);
           Files.ReadInt(R, data);  (*inst*)
-          fixP[nofP] := (adr - code) DIV 4; INC(nofP);
+          fixP[nofP] := (adr - prg) DIV 4; INC(nofP);
           adr := adr - (data MOD 4000H)*4
         END ;
-        adr := code + fixorgD*4; nofD := 0;
-        WHILE adr # code DO
+        adr := prg + fixorgD*4; nofD := 0;
+        WHILE adr # prg DO
           Files.Set(R, F, adr);
           Files.ReadInt(R, data);  (*inst*)
-          fixD[nofD] := (adr - code) DIV 4; INC(nofD);
+          fixD[nofD] := (adr - prg) DIV 4; INC(nofD);
           adr := adr - (data MOD 10000H)*4
         END ;
-        Files.Set(R, F, code-4);
+        Files.Set(R, F, prg-4);
         (*second pass*)
-        Texts.WriteString(W, "code"); Texts.WriteLn(W);
+        Texts.WriteString(W, "program code"); Texts.WriteLn(W);
         Files.ReadInt(R, n); i := 0; DEC(nofP); DEC(nofD);
         WHILE i < n DO
           Files.ReadInt(R, data); Texts.WriteInt(W, i, 4); Texts.Write(W, TAB); Texts.WriteHex(W, data);
@@ -282,8 +281,8 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
        mod := Modules.root;
        WHILE (mod # NIL) & (mod.name # S.s) DO mod := mod.next END ;
        IF mod # NIL THEN
-         Texts.WriteLn(W); adr := mod.code;
-         Texts.WriteString(W, "code"); Texts.WriteInt(W, (mod.imp - adr) DIV 4, 6); Texts.WriteLn(W);
+         Texts.WriteLn(W); adr := mod.prg;
+         Texts.WriteString(W, "program code"); Texts.WriteInt(W, (mod.imp - adr) DIV 4, 6); Texts.WriteLn(W);
          WHILE adr # mod.imp DO
            SYSTEM.GET(adr, data); Texts.WriteInt(W, adr, 4); Texts.Write(W, TAB); Texts.WriteHex(W, data);
            Texts.Write(W, TAB); opcode(data, FALSE, FALSE); Texts.WriteLn(W); INC(adr, 4)
@@ -294,7 +293,7 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 19.5.21 Extended Oberon*)
      END
   END DecMod;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "ORTool 18.2.2013 / AP 19.5.21");
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "ORTool 18.2.2013 / AP 1.8.22");
   Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
   mnemo0[0] := "MOV";
   mnemo0[1] := "LSL";

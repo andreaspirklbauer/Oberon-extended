@@ -1,4 +1,4 @@
-MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 1.4.21 Extended Oberon*)
+MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 1.9.22 Extended Oberon*)
   IMPORT Texts, Oberon, ORS, ORB, ORG;
   (*Author: Niklaus Wirth, 2014. Oberon-2 extensions by Andreas Pirklbauer, 2020.
     Parser of Oberon-RISC compiler. Uses Scanner ORS to obtain symbols (tokens),
@@ -91,11 +91,6 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     END
   END CheckExport;
 
-  PROCEDURE CheckCase(VAR x: ORG.Item; obj: ORB.Object);
-  BEGIN
-    IF ~x.selected & (obj.lev > 0) & (obj.exno > 0) & (obj.type.form = ORB.Pointer) THEN x.rdo := TRUE END
-  END CheckCase;
-
   PROCEDURE CheckReceiver(VAR x: ORG.Item; proc: ORB.Object);
   BEGIN
     IF ~x.deref & (proc.type.dsc.class # ORB.Par) THEN ORS.Mark("incompatible receiver") END
@@ -136,11 +131,34 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF ~guard THEN x.type := ORB.boolType END
   END TypeTest;
 
+  PROCEDURE Method(VAR x: ORG.Item; obj: ORB.Object);
+    VAR fld: ORB.Object; xt: ORB.Type;
+  BEGIN
+    IF sym = ORS.arrow THEN (*super call*)
+      IF obj.type.dsc = ORB.topScope.next THEN
+        IF obj.type.dsc = x.obj THEN
+          ORS.Get(sym); xt := x.type; fld := ORB.FindFld(obj.name, xt);
+          IF fld # NIL THEN xt := xt.base; fld := NIL;
+            WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindFld(obj.name, xt); xt := xt.base END ;
+            IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN obj := fld;
+              CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base)
+            ELSE ORS.Mark("method undefined in base types")
+            END
+          ELSE ORS.Mark("method undefined at this extension level")
+          END
+        ELSE ORS.Mark("receiver must be the same as in overriding method")
+        END
+      ELSE ORS.Mark("redefined method must be called from overriding method")
+      END
+    ELSE (*method call*) CheckReceiver(x, obj); ORG.Method(x, obj, FALSE)
+    END
+  END Method;
+
   PROCEDURE selector(VAR x: ORG.Item);
-    VAR y: ORG.Item; obj, fld: ORB.Object; xt: ORB.Type;
+    VAR y: ORG.Item; obj: ORB.Object;
   BEGIN
     WHILE (sym = ORS.lbrak) OR (sym = ORS.period) OR (sym = ORS.arrow)
-        OR (sym = ORS.lparen) & (x.type.form IN {ORB.Record, ORB.Pointer}) DO x.selected := TRUE;
+        OR (sym = ORS.lparen) & (x.type.form IN {ORB.Record, ORB.Pointer}) DO
       IF sym = ORS.lbrak THEN
         IF x.type.form = ORB.Pointer THEN ORG.DeRef(x); x.type := x.type.base END ;
         REPEAT ORS.Get(sym); expression(y);
@@ -157,21 +175,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           IF x.type.form = ORB.Record THEN
             obj := ORB.thisfield(x.type); ORS.Get(sym);
             IF obj # NIL THEN
-              IF obj.type.form = ORB.TProc THEN  (*type-bound procedure*)
-                IF sym = ORS.arrow THEN (*super call*)
-                  ORS.Get(sym); xt := x.type; fld := ORB.FindFld(obj.name, xt);
-                  IF fld # NIL THEN xt := xt.base; fld := NIL;
-                    WHILE (xt # NIL) & (fld = NIL) DO fld := ORB.FindFld(obj.name, xt); xt := xt.base END ;
-                    IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN obj := fld;
-                      CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base)
-                    ELSE ORS.Mark("method undefined in base types")
-                    END
-                  ELSE ORS.Mark("method undefined at this extension level")
-                  END
-                ELSE (*method call*) CheckReceiver(x, obj); ORG.Method(x, obj, FALSE)
-                END
-              ELSE ORG.Field(x, obj)
-              END ;
+              IF obj.type.form = ORB.TProc THEN Method(x, obj) ELSE ORG.Field(x, obj) END ;
               x.type := obj.type
             ELSE ORS.Mark("undef")
             END
@@ -194,7 +198,8 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         ELSE ORS.Mark("not an identifier")
         END ;
         Check(ORS.rparen, " ) missing")
-      END
+      END ;
+      x.obj := NIL
     END
   END selector;
 
@@ -362,7 +367,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF sym = ORS.ident THEN
       qualident(obj);
       IF obj.class = ORB.SFunc THEN StandFunc(x, obj.val, obj.type)
-      ELSE ORG.MakeItem(x, obj); selector(x); CheckCase(x, obj);
+      ELSE ORG.MakeItem(x, obj); selector(x);
         IF sym = ORS.lparen THEN
           ORS.Get(sym);
           IF (x.type.form IN {ORB.Proc, ORB.TProc}) & (x.type.base.form # ORB.NoTyp) THEN
@@ -525,7 +530,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     PROCEDURE TypeCase(obj: ORB.Object; VAR L0: LONGINT);
       VAR typobj: ORB.Object; x: ORG.Item;
         orgtype: ORB.Type;  (*original type of case var*)
-    BEGIN (*obj.lev > 0 & obj.exno > 0*)
+    BEGIN
       IF sym = ORS.ident THEN
         qualident(typobj); ORG.MakeItem(x, obj); orgtype := obj.type;
         IF typobj.class # ORB.Typ THEN ORS.Mark("not a type") END ;
@@ -538,12 +543,12 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
 
     PROCEDURE TypeCasePart(obj: ORB.Object);
       VAR L0: LONGINT;
-    BEGIN Check(ORS.of, "OF expected"); L0 := 0; INC(obj.exno);
-      WHILE (sym < ORS.end) OR (sym = ORS.bar) DO
+    BEGIN Check(ORS.of, "OF expected"); L0 := 0;
+      WHILE sym <= ORS.bar DO
         IF sym = ORS.bar THEN ORS.Get(sym) ELSE TypeCase(obj, L0) END
       END ;
       IF sym = ORS.else THEN ORS.Get(sym); StatSequence END ;
-      ORG.FixLink(L0); DEC(obj.exno)
+      ORG.FixLink(L0)
     END TypeCasePart;
 
     PROCEDURE CaseLabel(VAR x: ORG.Item);
@@ -555,7 +560,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     END CaseLabel;
 
     PROCEDURE NumericCase(LabelForm: INTEGER; VAR n: INTEGER; VAR tab: ARRAY OF ORG.LabelRange);
-      VAR x, y: ORG.Item; i: INTEGER; continue: BOOLEAN;
+      VAR x, y: ORG.Item; i: INTEGER;
     BEGIN
       REPEAT CaseLabel(x);
         IF x.type.form # LabelForm THEN ORS.Mark("invalid label form") END ;
@@ -563,14 +568,9 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           IF (x.type.form # y.type.form) OR (x.a >= y.a) THEN ORS.Mark("invalid label range"); y := x END
         ELSE y := x
         END ;
-        IF n < NofCases THEN  (*enter label range into ordered table*)
-          i := n; continue := TRUE;
-          WHILE continue & (i > 0) DO
-            IF tab[i-1].low > y.a THEN tab[i] := tab[i-1]; DEC(i)
-            ELSE continue := FALSE;
-              IF tab[i-1].high >= x.a THEN ORS.Mark("overlapping case labels") END
-            END
-          END ;
+        IF n < NofCases THEN (*enter label range into ordered table*) i := n;
+          WHILE (i > 0) & (tab[i-1].low > y.a) DO tab[i] := tab[i-1]; DEC(i) END ;
+          IF (i > 0) & (tab[i-1].high >= x.a) THEN ORS.Mark("overlapping case labels") END ;
           tab[i].low := x.a; tab[i].high := y.a; tab[i].label := ORG.Here(); INC(n)
         ELSE ORS.Mark("too many case labels")
         END ;
@@ -585,15 +585,28 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       VAR L0, L1, L2: LONGINT; n, labelform: INTEGER;
         tab: ARRAY NofCases OF ORG.LabelRange;  (*ordered table of label ranges*)
     BEGIN Check(ORS.of, "OF expected"); ORG.CaseHead(x, L0); n := 0; L2 := 0; labelform := x.type.form;
-      WHILE (sym < ORS.end) OR (sym = ORS.bar) DO
+      WHILE sym <= ORS.bar DO
         IF sym = ORS.bar THEN ORS.Get(sym) ELSE NumericCase(labelform, n, tab); ORG.FJump(L2) END
       END ;
       IF sym = ORS.else THEN ORS.Get(sym); L1 := ORG.Here(); StatSequence; ORG.FJump(L2) ELSE L1 := 0 END ;
       ORG.CaseTail(L0, L1, n, tab); ORG.FixLink(L2)
     END NumericCasePart;
 
+    PROCEDURE SkipCase;
+      VAR obj: ORB.Object;
+    BEGIN Check(ORS.of, "OF expected");
+      WHILE sym <= ORS.bar DO
+        IF sym = ORS.bar THEN ORS.Get(sym)
+        ELSE (*type case assumed*)
+          IF sym = ORS.ident THEN qualident(obj) END ;
+          Check(ORS.colon, ": expected"); StatSequence
+        END
+      END ;
+      IF sym = ORS.else THEN ORS.Get(sym); StatSequence END
+    END SkipCase;
+
   BEGIN (* StatSequence *)
-    REPEAT (*sync*) obj := NIL;
+    REPEAT (*sync*)
       IF ~((sym >= ORS.ident) & (sym <= ORS.for) OR (sym >= ORS.semicolon)) THEN
         ORS.Mark("statement expected");
         REPEAT ORS.Get(sym) UNTIL sym >= ORS.ident
@@ -603,7 +616,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         IF x.mode = ORB.SProc THEN StandProc(obj.val)
         ELSE selector(x);
           IF sym = ORS.becomes THEN (*assignment*)
-            ORS.Get(sym); CheckCase(x, obj); CheckReadOnly(x); expression(y);
+            ORS.Get(sym); CheckReadOnly(x); expression(y);
             IF CompTypes(x.type, y.type, FALSE) THEN
               IF (x.type.form <= ORB.Pointer) OR (x.type.form = ORB.Proc) THEN ORG.Store(x, y)
               ELSE ORG.StoreStruct(x, y)
@@ -675,17 +688,12 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         ELSE ORS.Mark("identifier expected")
         END
       ELSIF sym = ORS.case THEN
-        ORS.Get(sym);
-        IF sym = ORS.ident THEN obj := ORB.thisObj() END ;
-        x.selected := FALSE; expression(x);
-        IF ~x.selected & (obj # NIL) & (obj.class # ORB.Mod) & (obj.lev > 0) &
-          ((x.type.form = ORB.Pointer) & (x.mode = ORB.Var) & (x.type.base.form = ORB.Record) OR
-          (x.type.form = ORB.Record) & (x.mode = ORB.Par)) THEN TypeCasePart(obj)
-        ELSE
-          IF ~(x.type.form IN {ORB.Int, ORB.Byte, ORB.Char}) THEN
-            ORS.Mark("invalid case expression"); x.type := ORB.intType
-          END ;
-          NumericCasePart(x)
+        ORS.Get(sym); x.obj := NIL; expression(x);
+        IF x.type.form IN {ORB.Int, ORB.Byte, ORB.Char} THEN NumericCasePart(x)
+        ELSIF (x.obj # NIL) & (x.obj.type # NIL) &
+          ((x.type.form = ORB.Pointer) & (x.type.base.form = ORB.Record) OR
+          (x.type.form = ORB.Record) & (x.mode = ORB.Par)) THEN TypeCasePart(x.obj)
+        ELSE ORS.Mark("invalid case variable"); SkipCase
         END ;
         Check(ORS.end, "no END")
       END ;
@@ -991,12 +999,15 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       int, expo: BOOLEAN;
 
     PROCEDURE Body(proc: ORB.Object; parblksize: LONGINT; int: BOOLEAN);
-      VAR x: ORG.Item; locblksize: LONGINT;
+      VAR x: ORG.Item; locblksize, L: LONGINT;
     BEGIN Check(ORS.semicolon, "no ;"); locblksize := parblksize;
-      Declarations(locblksize); proc.type.dsc := ORB.topScope.next;
-      WHILE sym = ORS.procedure DO ProcedureDecl; Check(ORS.semicolon, "no ;") END ;
-      ORG.FixLink(proc.type.len);  (*fix forward references generated in ORG*)
+      Declarations(locblksize);
       proc.val := ORG.Here() * 4; proc.type.dsc := ORB.topScope.next;
+      IF sym = ORS.procedure THEN
+        L := 0; ORG.FJump(L);
+        REPEAT ProcedureDecl; Check(ORS.semicolon, "no ;") UNTIL sym # ORS.procedure;
+        ORG.FixOne(L); proc.val := ORG.Here() * 4; proc.type.dsc := ORB.topScope.next
+      END ;
       ORG.Enter(parblksize, locblksize, int);
       IF sym = ORS.begin THEN ORS.Get(sym); StatSequence END ;
       IF sym = ORS.return THEN
@@ -1024,7 +1035,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF sym = ORS.ident THEN
       ORS.CopyId(procid); ORS.Get(sym); CheckExport(expo);
       IF int THEN parblksize := 12 ELSE parblksize := 4 END ;
-      NEW(type); type.size := ORG.WordSize; type.len := 0; (*len used as heading of fixup chain of forward refs*)
+      NEW(type); type.size := ORG.WordSize;
       IF rec = NIL THEN  (*regular procedure*)
         ORB.NewObj(proc, procid, ORB.Const);
         type.form := ORB.Proc; proc.type := type; proc.val := -1; proc.lev := level; proc.expo := expo;
@@ -1157,7 +1168,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     Oberon.Collect(0); Oberon.Return(res)
   END Compile;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 31.12.20");
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 1.9.22");
   Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
   NEW(dummy); dummy.class := ORB.Var; dummy.type := ORB.intType;
   expression := expression0; Type := Type0; FormalType := FormalType0

@@ -1,16 +1,14 @@
-MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended Oberon*)
+MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 1.9.22 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, FileDir, Files, Modules,
     Input, Display, Viewers, Fonts, Texts, Oberon, MenuViewers, TextFrames;
 
-  CONST Version* = "Extended Oberon System  AP 11.6.21";
+  CONST Version* = "Extended Oberon System  AP 1.9.22";
     StandardMenu = "System.Close System.Copy System.Grow Edit.Search Edit.Store | System.Expand System.Spread System.Clone";
     LogMenu = "Edit.Locate Edit.Search System.Copy System.Grow System.Clear | System.Expand System.Spread System.Clone";
-    SystemLog = "System.Log"; SystemTool = "System.Tool"; SystemBatch = "System.Batch";
-    TAB = Input.TAB; CR = Input.CR; LNK = 15; TaskPeriod = 500; (*ms*)
 
   TYPE Handler = PROCEDURE(name: ARRAY OF CHAR);
 
-  VAR W: Texts.Writer; M: Modules.Module; T: Oberon.Task; ref, last: INTEGER; defer: BOOLEAN;
+  VAR W: Texts.Writer; M: Modules.Module; ref: INTEGER;
     pat: ARRAY 32 OF CHAR;
 
   PROCEDURE GetArg(VAR S: Texts.Scanner);
@@ -95,7 +93,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
   BEGIN Oberon.AllocateSystemViewer(0, X, Y);
     IF Oberon.Log = NIL THEN Oberon.OpenLog(TextFrames.Text("")) END ;
     V := MenuViewers.New(
-      TextFrames.NewMenu(SystemLog, LogMenu),
+      TextFrames.NewMenu("System.Log", LogMenu),
       TextFrames.NewText(Oberon.Log, 0), TextFrames.menuH, X, Y)
   END OpenLog;
 
@@ -195,12 +193,12 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
       Texts.WriteInt(W, Viewers.CurDisplay.id, 3); Texts.Write(W, " ");
       Texts.WriteString(W, Viewers.CurDisplay.name); EndLine;
       Oberon.AllocateSystemViewer(0, X, Y);
-      menu := TextFrames.NewMenu(SystemLog, LogMenu);
+      menu := TextFrames.NewMenu("System.Log", LogMenu);
       main := TextFrames.NewText(Oberon.Log, 0);
       logV := MenuViewers.New(menu, main, TextFrames.menuH, X, Y);
       Oberon.AllocateSystemViewer(0, X, Y);
-      menu := TextFrames.NewMenu(SystemTool, StandardMenu);
-      main := TextFrames.NewText(TextFrames.Text(SystemTool), 0);
+      menu := TextFrames.NewMenu("System.Tool", StandardMenu);
+      main := TextFrames.NewText(TextFrames.Text("System.Tool"), 0);
       toolV := MenuViewers.New(menu, main, TextFrames.menuH, X, Y)
     END
   END OpenViewers;
@@ -369,7 +367,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
     VAR mod: Modules.Module; i: INTEGER;
   BEGIN i := 0;
     IF (dst > 0) & (dst < Modules.AllocPtr) THEN mod := Modules.root;
-      WHILE (mod # NIL) & ~((mod.name[0] # 0X) & mod.selected & (mod.data <= dst) & (dst < mod.imp)) DO mod := mod.next END ;
+      WHILE (mod # NIL) & ~((mod.name[0] # 0X) & mod.selected & (mod.var <= dst) & (dst < mod.imp)) DO mod := mod.next END ;
       IF mod # NIL THEN i := 1;
         IF (M # mod) OR (pat # s) THEN M := mod; pat := s;
           IF ref = Modules.dyntypes THEN Texts.WriteString(W, "  types of "); Texts.WriteString(W, mod.name);
@@ -502,7 +500,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
       Texts.WriteString(W, name);
       IF pat[j0+1] = "!" THEN (*option*)
         FileDir.Attributes(adr, length, date);
-        Texts.Write(W, TAB); Texts.WriteClock(W, date); Texts.WriteInt(W, length, 8); Texts.WriteHex(W, adr)
+        Texts.Write(W, Input.TAB); Texts.WriteClock(W, date); Texts.WriteInt(W, length, 8); Texts.WriteHex(W, adr)
       END ;
       Texts.WriteLn(W)
     END
@@ -517,7 +515,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
       pre: ARRAY 32 OF CHAR;
   BEGIN Texts.OpenReader(R, Oberon.Par.text, Oberon.Par.pos); Texts.Read(R, ch);
     WHILE ch = " " DO Texts.Read(R, ch) END ; (*spaces*)
-    IF (ch = "^") OR (ch = CR) THEN
+    IF (ch = "^") OR (ch = Input.CR) THEN
       Oberon.GetSelection(T, beg, end, time);
       IF time >= 0 THEN
         Texts.OpenReader(R, T, beg); Texts.Read(R, ch);
@@ -629,8 +627,8 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
     M := Modules.root;
     WHILE M # NIL DO
       IF M.name[0] # 0X THEN
-        Texts.WriteString(W, M.name); Texts.WriteInt(W, M.num, 4); Texts.Write(W, TAB);
-        Texts.WriteHex(W, ORD(M)); Texts.WriteHex(W, M.code); Texts.WriteInt(W, M.refcnt, 4)
+        Texts.WriteString(W, M.name); Texts.WriteInt(W, M.num, 4); Texts.Write(W, Input.TAB);
+        Texts.WriteHex(W, ORD(M)); Texts.WriteHex(W, M.prg); Texts.WriteInt(W, M.refcnt, 4)
       ELSE Texts.WriteString(W, "---")
       END ;
       Texts.WriteLn(W); M := M.next
@@ -669,7 +667,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
     VAR fnt: Fonts.Font;
   BEGIN Texts.WriteString(W, "System.ShowFonts"); Texts.WriteLn(W); fnt := Fonts.root;
     WHILE fnt # NIL DO
-      Texts.Write(W, TAB); Texts.WriteString(W, fnt.name); Texts.WriteLn(W); fnt := fnt.next
+      Texts.Write(W, Input.TAB); Texts.WriteString(W, fnt.name); Texts.WriteLn(W); fnt := fnt.next
     END ;
     Texts.Append(Oberon.Log, W.buf)
   END ShowFonts;
@@ -697,63 +695,5 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 11.6.21 Extended O
     END
   END Batch;
 
-  PROCEDURE Trap(VAR a: INTEGER; b, c, d: INTEGER);
-    VAR u, v, w: INTEGER; mod: Modules.Module;
-  BEGIN u := SYSTEM.REG(LNK);  (*return address deposited in register LNK by the trap (=BLR TR) instruction*)
-    SYSTEM.GET(u - 4, v);  (*trap instruction, contains code position and trap number as generated in ORG.Trap*)
-    w := v DIV 10H MOD 10H;  (*trap number*)
-    IF w = 0 THEN Kernel.New(a, b, c, d)
-    ELSE (*trap*)
-      IF defer THEN (*defer trap handling*) last := u; Oberon.Install(T)
-      ELSE defer := TRUE;
-        Texts.WriteLn(W); Texts.WriteString(W, "  pos ");
-        Texts.WriteInt(W, v DIV 100H MOD 10000H, 4);  (*code position*)
-        Texts.WriteString(W, "  TRAP"); Texts.WriteInt(W, w, 4); mod := Modules.root;
-        WHILE (mod # NIL) & ((u < mod.code) OR (u >= mod.imp)) DO mod := mod.next END ;
-        IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
-        Texts.WriteString(W, " at"); Texts.WriteHex(W, u);
-        Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
-        defer := FALSE
-      END ;
-      Oberon.Collect(0); Oberon.Reset
-    END
-  END Trap;
-
-  PROCEDURE Abort;
-    VAR u: INTEGER; mod: Modules.Module;
-  BEGIN u := SYSTEM.REG(LNK);  (*return address deposited in register LNK by the abort (=BL 0) instruction*)
-    IF defer THEN (*defer abort handling*) last := u; Oberon.Install(T)
-    ELSE defer := TRUE;
-      Texts.WriteLn(W); Texts.WriteString(W, "  ABORT  "); mod := Modules.root;
-      WHILE (mod # NIL) & ((u < mod.code) OR (u >= mod.imp)) DO mod := mod.next END ;
-      IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
-      Texts.WriteString(W, " at"); Texts.WriteHex(W, u);
-      Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
-      defer := FALSE
-    END ;
-    Oberon.Collect(0); Oberon.Reset
-  END Abort;
-
-  PROCEDURE Deferred;  (*handle trap/abort as soon as the garbage collector has freed up enough heap space*)
-    VAR v, w, pos: INTEGER; mod: Modules.Module;
-  BEGIN
-    IF Kernel.allocated < Kernel.heapLim - Kernel.heapOrg - 10000H THEN Oberon.Remove(T);
-      SYSTEM.GET(last - 4, v); (*trap instruction*) pos := v DIV 100H MOD 10000H; (*code position*)
-      Texts.WriteLn(W);
-      IF pos # 0 THEN w := v DIV 10H MOD 10H; (*trap number*)
-        Texts.WriteString(W, "  pos "); Texts.WriteInt(W, pos, 4);
-        Texts.WriteString(W, "  RECURSIVE TRAP"); Texts.WriteInt(W, w, 4)
-      ELSE Texts.WriteString(W, "  RECURSIVE ABORT  ")
-      END ;
-      mod := Modules.root;
-      WHILE (mod # NIL) & ((last < mod.code) OR (last >= mod.imp)) DO mod := mod.next END ;
-      IF mod # NIL THEN Texts.WriteString(W, " in "); Texts.WriteString(W, mod.name) END ;
-      Texts.WriteString(W, " at"); Texts.WriteHex(W, last);
-      Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf); defer := FALSE
-    END
-  END Deferred;
-
-BEGIN Texts.OpenWriter(W); defer := FALSE; T := Oberon.NewTask(Deferred, TaskPeriod);
-  Oberon.OpenLog(TextFrames.Text("")); CreateDisplay("Oberon");
-  Kernel.Install(SYSTEM.ADR(Trap), Kernel.TrapAdr); Kernel.Install(SYSTEM.ADR(Abort), 0); Run(SystemBatch)
+BEGIN Texts.OpenWriter(W); Oberon.OpenLog(TextFrames.Text("")); CreateDisplay("Oberon"); Run("System.Batch")
 END System.

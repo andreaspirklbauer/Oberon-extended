@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 19.5.21 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 13.7.22 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -7,7 +7,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   CONST WordSize* = 4;
     StkOrg0 = -64; VarOrg0 = 0;  (*for RISC-0 only*)
     TR = 13; SP = 14; LNK = 15;  (*dedicated registers*)
-    maxCode = 8800; maxStrx = 3200; maxTD = 160; maxSet = WordSize*8;
+    maxCode = 9000; maxStrx = 3500; maxTD = 160; maxSet = WordSize*8;
     Reg = 10; RegI = 11; Cond = 12;  (*internal item modes*)
     ZeroD = 4B00H;  (*denormalized zero used for FLOOR/FLT conversions*)
     BCT = 0E7000000H; RTI = 10H; STI = 20H; F2 = -2;  (*instructions*)
@@ -25,8 +25,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     TYPE Item* = RECORD
       mode*: INTEGER;
       type*: ORB.Type;
+      obj*: ORB.Object;
       a*, b*, r: LONGINT;
-      rdo*, selected*, deref*, super: BOOLEAN  (*read only, selected in record or array, dereferenced, super call*)
+      rdo*, deref*, super: BOOLEAN  (*read only, dereferenced, super call*)
     END ;
     LabelRange* = RECORD low*, high*, label*: INTEGER END ;
 
@@ -62,12 +63,12 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END incR;
 
   PROCEDURE Put0(op, a, b, c: LONGINT);
-  BEGIN (*emit format-0 instruction*)
+  BEGIN (*emit format-0 register instruction*)
     code[pc] := ((a*C4 + b) * C4 + op) * C16 + c; INC(pc)
   END Put0;
 
   PROCEDURE Put1(op, a, b, im: LONGINT);
-  BEGIN (*emit format-1 instruction, -C16 <= im < C16*)
+  BEGIN (*emit format-1 register instruction, -C16 <= im < C16*)
     IF im < 0 THEN INC(op, V) END ;
     code[pc] := (((a+C6) * C4 + b) * C4 + op) * C16 + im MOD C16; INC(pc)
   END Put1;
@@ -89,7 +90,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1a;
 
   PROCEDURE Put1b(r, mno, off, disp: LONGINT);
-  BEGIN (*emit modified format-1 instruction to be fixed up by loader, 0 <= mno < 64, 0 <= off < 256*)
+  BEGIN (*emit modified register instruction to be fixed up by loader, 0 <= mno < 64, 0 <= off < 256*)
     code[pc] := (((r+16) * C6 + mno) * C8 + off) * C12 + disp MOD C12; INC(pc)
   END Put1b;
 
@@ -155,24 +156,21 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END fix1;
 
   PROCEDURE fix3(at, with: LONGINT);
-  BEGIN (*fix format-3 branch instruction*)
+  BEGIN (*fix branch instruction*)
     code[at] := code[at] DIV C24 * C24 + with MOD C24
   END fix3;
 
-  PROCEDURE FixLinkWith(L, x: LONGINT); (*fixup with offset to x*)
-    VAR L1, format: LONGINT; p: INTEGER;
-  BEGIN (*fix chain of format-1 or format-3 instructions*)
-    WHILE L # 0 DO p := code[L];
-      format := p DIV C30 MOD 4; L1 := p MOD C16;
-      IF format = 1 THEN fix1(L, (x-L)*4)
-      ELSIF format = 3 THEN fix3(L, x-L-1)
-      ELSE ORS.Mark("fixup impossible"); L1 := 0
-      END ;
-      L := L1
-    END
+  PROCEDURE FixOne*(at: LONGINT);
+  BEGIN fix3(at, pc-at-1)
+  END FixOne;
+
+  PROCEDURE FixLinkWith(L, dst: LONGINT);
+    VAR L1: LONGINT;
+  BEGIN (*fix chain of branch instructions*)
+    WHILE L # 0 DO L1 := code[L] MOD C24; fix3(L, dst-L-1); L := L1 END
   END FixLinkWith;
 
-  PROCEDURE FixLink*(L: LONGINT); (*fixup with offset to pc*)
+  PROCEDURE FixLink*(L: LONGINT);
   BEGIN FixLinkWith(L, pc)
   END FixLink;
 
@@ -206,8 +204,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
       IF x.type.size = 1 THEN op := Ldr+1 ELSE op := Ldr END ;
       IF x.mode = ORB.Const THEN
         IF x.type.form = ORB.Proc THEN
-          IF x.a < 0 THEN (*forward*) Put3(BL, 7, 0); Put1(Add, RH, LNK, x.type.len); x.type.len := pc-1  (*fixed up in ORP.Body*)
-          ELSIF x.r > 0 THEN (*local*) ORS.Mark("not allowed")
+          IF x.r > 0 THEN (*local*) ORS.Mark("not allowed")
           ELSIF x.r = 0 THEN (*global*) Put3(BL, 7, 0); Put1a(Sub, RH, LNK, pc*4 - x.a)
           ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a + C8, 1) (*mark as progbase-relative*)
           END
@@ -293,7 +290,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END MakeStringItem;
 
   PROCEDURE MakeItem*(VAR x: Item; y: ORB.Object);
-  BEGIN x.mode := y.class; x.type := y.type; x.a := y.val; x.rdo := y.rdo; x.selected := FALSE; x.deref := FALSE;
+  BEGIN x.obj := y; x.mode := y.class; x.type := y.type; x.a := y.val; x.rdo := y.rdo; x.deref := FALSE;
     IF y.class = ORB.Par THEN x.b := 0
     ELSIF (y.class = ORB.Const) & (y.type.form = ORB.String) THEN x.r := y.lev;
       x.a := y.val MOD C20; (*strx/exno*) x.b := y.val DIV C20 (*len*)
@@ -852,8 +849,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         Put2(Ldr, RH, RH, -4-x.a*4); Put3(BLR, 7, RH)
       END
     ELSIF x.mode = ORB.Const THEN  (*regular procedure*)
-      IF x.a < 0 THEN (*forward*) Put3(BL, 7, x.type.len); x.type.len := pc-1  (*fixed up in ORP.Body*)
-      ELSIF x.r >= 0 THEN Put3(BL, 7, (x.a DIV 4)-pc-1)
+      IF x.r >= 0 THEN Put3(BL, 7, (x.a DIV 4)-pc-1)
       ELSE (*imported*) Put3a(BL, -x.r, x.a, pc-fixorgP); fixorgP := pc-1
       END
     ELSE  (*installed procedure*)

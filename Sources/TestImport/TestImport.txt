@@ -1,0 +1,52 @@
+ORP.Compile
+TestImport00.Mod/s
+TestImport01.Mod/s
+TestImport10.Mod/s
+TestImport11.Mod/s
+TestImport20.Mod/s
+TestImport21.Mod/s
+TestImport22.Mod/s
+TestImport30.Mod/s
+TestImport31.Mod/s
+TestImport40.Mod/s
+TestImport41.Mod/s
+TestImport42.Mod/s
+TestImport50.Mod/s
+TestImport51.Mod/s
+TestImport52.Mod/s
+TestImport53.Mod/s
+TestImport60.Mod/s
+TestImport61.Mod/s
+TestImport62.Mod/s
+TestImport70.Mod/s
+TestImport71.Mod/s
+TestImport81.Mod/s
+TestImport82.Mod/s
+TestImport80.Mod/s
+TestImport90.Mod/s
+TestImport91.Mod/s
+TestImport100.Mod/s
+TestImport110.Mod/s
+TestImport111.Mod/s
+TestImport112.Mod/s
+TestImport120.Mod/s
+TestImport121.Mod/s
+TestImport122.Mod/s
+TestImport130.Mod/s
+TestImport140.Mod/s
+TestImport141.Mod/s
+TestImport150.Mod/s
+~
+
+#
+# The following intentionally report an error under Project Oberon 2013
+#
+ORP.Compile TestImport131.Mod/s ~   # mult def (disallow importing the same module twice)
+ORP.Compile TestImport151.Mod/s ~   # mult def (disallow creating more than one alias per imported module)
+ORP.Compile TestImport142.Mod/s ~   # external base type not implemented   
+
+#
+# The following test suite can be executed manually from within the file TestImport.Mod
+#
+Edit.Open TestImport.Mod ~
+

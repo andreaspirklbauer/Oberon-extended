@@ -29,7 +29,7 @@
 2020-10-24 Oberon, System - Oberon.Batch (but not System.Batch) invokes the garbage collector after each executed command
 2020-11-01 ORG, ORB - Restrict the type case statement such that type loopholes are no longer possible
 2020-11-12 ORP - Allow elements of a structure as numeric case expressions in all cases
-2020-12-01 ORL - Don't provide a hint to the bootloader for Kernel.MemLim and Kernel.stackOrg anymore
+2020-12-01 ORL - No longer provide a hint to the bootloader for Kernel.MemLim and Kernel.stackOrg
 2020-12-02 Disk - Enlarge boot area from sectors 2-63 (62KB) to sectors 2-159 (158KB) to accomodate entire pre-linked Oberon systems
 2020-12-12 Modules - Add procedure Modules.SetFinalizer to set a module finalization sequence to be executed prior to unloading
 2020-12-30 TextFrames - TextFrames.Copy now produces an exact copy of the text frame, including vertical offset from baseline
@@ -37,3 +37,24 @@
 2021-01-24 ORTool - Decode FLR, FLT, RTI, STI, CLI instructions
 2021-04-12 In, Out - In added, Out updated
 2021-06-11 ORB - Allow hidden re-imports to coexist with declarations of identifiers or module aliases with the same name
+2021-10-01 ORTool - Improve output of ORTool.DecSym, type hierarchy now displayed over multiple lines
+2021-10-01 ORG - Introduce a new field x.obj into ORG.Item, used to distinguish between numeric and type case statements
+2021-10-01 ORP - Eliminate a number of restrictions in the type case statement, as suggested by C. Burrows
+2021-11-01 ORG, ORP - No longer avoid forward branches in nested procedures, removal of this optimization makes the compiler simpler
+2022-01-01 Disk - Enlarge boot area from sectors 2-159 (158KB) to sectors 2-191 (190KB) to accommate larger pre-linked Oberon systems
+2022-01-01 ORL, Oberon0 - clear unused part of boot area during system building (identical builds will result in identical images)
+2022-01-11 Oberon, System - Move procedures Trap, Abort and Deferred from System to Oberon
+2022-05-01 Modules, ORL - Renamed fields data and code to var and prg in module descriptors
+2022-05-22 ORB, ORTool - Streamlined symbol files by removing unnecessary fixup code in procedures Import and Export
+2022-06-15 ORB - Set mod.rdo in ORB.ThisModule, simplify ORB.thisimport by using the fact that ORB.thisObj skips over re-imports
+2022-06-21 ORB - Correct ORB.Import for case where module M1 defines M1.T1 to be an alias type of M0.T0 and a client imports both M0 and M1
+2022-06-21 ORB - Use Files.WriteNum and Files.ReadNum for real constants
+2022-07-01 ORP - ORP.Method now checks whether a redefined method is called from the overriding method and whether the receivers are the same
+2022-07-22 ORB - Eliminate the invalid import order restriction (allow explicit import of a module after types from it have previously been re-imported)
+2022-08-01 ORB - Re-introduce fix in ORB.InType (variable 'last') to handle cyclic references correctly
+2022-08-07 ORB - Write name and key of a re-imported module before instead of after the type description in the symbol file
+2022-08-11 ORB - Also detect a conflict with a module alias if a previously re-imported module is later explicitly imported
+2022-08-15 ORB - Minimize the number of searches through the module list in ORB.ThisModule
+2022-08-15 MenuViewers - Eliminate flickering when continuously modifying viewers in MenuViewers.Modify'
+2022-08-28 Oberon - Skip over line feeds in Oberon.Skip, allowing regular .txt files as input for Oberon.Batch
+2022-08-31 ORB - detect bad keys among multiple imports or re-imports of the same module at compile time instead of only at module load time

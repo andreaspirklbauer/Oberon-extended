@@ -1,4 +1,4 @@
-MODULE Disk;  (*NW/PR  11.4.86 / 27.12.95 / 4.2.2014 / AP 12.12.20 Extended Oberon*)
+MODULE Disk;  (*NW/PR  11.4.86 / 27.12.95 / 4.2.2014 / AP 1.1.22 Extended Oberon*)
   IMPORT SYSTEM;
   CONST SectorLength* = 1024;
     spiData = -48; spiCtrl = -44;
@@ -77,8 +77,8 @@ MODULE Disk;  (*NW/PR  11.4.86 / 27.12.95 / 4.2.2014 / AP 12.12.20 Extended Ober
   PROCEDURE InitSecMap*;
     VAR i: INTEGER;
   BEGIN NofSectors := 0;
-    FOR i := 0 TO 4 DO sectorMap[i] := {0 .. 31} END ;           (*mark blocks 0-159 (=5*32 = 160 blocks) as allocated*)
-    FOR i := 5 TO mapsize DIV 32 - 1 DO sectorMap[i] := {} END   (*mark blocks 160-65536 (=64K-160 blocks) as unallocated*)
+    FOR i := 0 TO 5 DO sectorMap[i] := {0 .. 31} END ;           (*mark blocks 0-191 (=6*32 = 192 blocks) as allocated*)
+    FOR i := 6 TO mapsize DIV 32 - 1 DO sectorMap[i] := {} END   (*mark blocks 192-65536 (=64K-192 blocks) as unallocated*)
   END InitSecMap;
 
   PROCEDURE MarkSector*(sec: INTEGER);

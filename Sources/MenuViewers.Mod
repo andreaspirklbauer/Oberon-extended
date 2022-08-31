@@ -1,21 +1,21 @@
-MODULE MenuViewers; (*JG 26.8.90 / 16.9.93 / NW 10.3.13 / AP 12.2.20 Extended Oberon*)
+MODULE MenuViewers; (*JG 26.8.90 / 16.9.93 / NW 10.3.13 / AP 15.8.22 Extended Oberon*)
   IMPORT Input, Display, Viewers, Oberon;
 
   TYPE Viewer* = POINTER TO ViewerDesc;
     ViewerDesc* = RECORD (Viewers.ViewerDesc) menuH*: INTEGER END;
 
-  PROCEDURE Draw (V: Viewer; Y, H, col: INTEGER);
+  PROCEDURE Draw (V: Viewer; Y, H: INTEGER);
   BEGIN
-    Display.ReplConst(col, V.X, Y, 1, H, Display.replace);
-    Display.ReplConst(col, V.X + V.W - 1, Y, 1, H, Display.replace);
-    Display.ReplConst(col, V.X + 1, Y, V.W - 2, 1, Display.replace);
-    Display.ReplConst(col, V.X + 1, Y + H - 1, V.W - 2, 1, Display.replace)
+    Display.ReplConst(Display.white, V.X, Y, 1, H, Display.replace);
+    Display.ReplConst(Display.white, V.X + V.W - 1, Y, 1, H, Display.replace);
+    Display.ReplConst(Display.white, V.X + 1, Y, V.W - 2, 1, Display.replace);
+    Display.ReplConst(Display.white, V.X + 1, Y + H - 1, V.W - 2, 1, Display.replace)
   END Draw;
 
   PROCEDURE Restore (V: Viewer);
     VAR Menu, Main: Display.Frame;
   BEGIN Menu := V.dsc; Main := V.dsc.next;
-    Oberon.RemoveMarks(V.X, V.Y, V.W, V.H); Draw(V, V.Y, V.H, Display.white);
+    Oberon.RemoveMarks(V.X, V.Y, V.W, V.H); Draw(V, V.Y, V.H);
     IF V.H > V.menuH + 1 THEN
       Main.X := V.X + 1; Main.Y := V.Y + 1; Main.W := V.W - 2; Main.H := V.H - V.menuH - 1;
       Menu.X := V.X + 1; Menu.Y := V.Y + V.H - V.menuH; Menu.W := V.W - 2; Menu.H := V.menuH - 1;
@@ -30,7 +30,7 @@ MODULE MenuViewers; (*JG 26.8.90 / 16.9.93 / NW 10.3.13 / AP 12.2.20 Extended Ob
   PROCEDURE Modify (V: Viewer; Y, H: INTEGER);
     VAR Menu, Main: Display.Frame;
   BEGIN Menu := V.dsc; Main := V.dsc.next;
-    Oberon.RemoveMarks(V.X, V.Y, V.W, V.H); Draw(V, V.Y, V.H, Display.black);
+    Oberon.RemoveMarks(V.X, V.Y, V.W, V.H);
     IF H > V.menuH + 1 THEN
       IF Y + H > V.Y + V.H THEN
         Viewers.Adjust(Menu, Viewers.modify, Y + H - V.menuH, V.menuH - 1);
@@ -46,7 +46,7 @@ MODULE MenuViewers; (*JG 26.8.90 / 16.9.93 / NW 10.3.13 / AP 12.2.20 Extended Ob
       Viewers.Adjust(Main, Viewers.modify, Y + H - V.menuH, 0);
       Viewers.Adjust(Menu, Viewers.modify, Y + 1, H - 2)
     END ;
-    Draw(V, Y, H, Display.white)
+    Draw(V, Y, H)
   END Modify;
 
   PROCEDURE Suspend (V: Viewer);

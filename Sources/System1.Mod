@@ -1,4 +1,4 @@
-MODULE System1;  (*top module for a boot file containing the entire Oberon system / AP 7.2.20*)
+MODULE System1;  (*top module for a boot file containing the entire Oberon system / AP 1.5.22*)
   IMPORT SYSTEM, Files, Modules, Oberon, System, Oberon0, Oberon0Tool;
 
   PROCEDURE InitDefaultFont;  (*create the default font file Oberon10.Scn.Fnt if necessary*)
@@ -171,7 +171,7 @@ MODULE System1;  (*top module for a boot file containing the entire Oberon syste
   BEGIN mod := Modules.root;
     WHILE (mod # NIL) & (name # mod.name) DO mod := mod.next END ;
     IF mod # NIL THEN SYSTEM.GET(mod.ent, w);
-      body := SYSTEM.VAL(Modules.Command, mod.code + w); body
+      body := SYSTEM.VAL(Modules.Command, mod.prg + w); body
     END
   END InitMod;
 

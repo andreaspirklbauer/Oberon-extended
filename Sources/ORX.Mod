@@ -1,4 +1,4 @@
-MODULE ORX;  (*Oberon boot converter for RISC / AP 31.12.20 Extended Oberon*)
+MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
   IMPORT Files, Texts, Oberon;
   CONST CR = 0DX; noerr = 0; badfile = 4;  (*copied from Modules for use as cross development tool*)
 
@@ -6,6 +6,10 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 31.12.20 Extended Oberon*)
 
   VAR res*: INTEGER;
     W: Texts.Writer;
+
+  PROCEDURE EndLine;
+  BEGIN Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
+  END EndLine;
 
   PROCEDURE WriteHex(VAR R: Files.Rider; x: LONGINT);  (*write a 4 byte LONGINT in 8 digit hex format*)
     VAR i: INTEGER; y: LONGINT;
@@ -74,7 +78,7 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 31.12.20 Extended Oberon*)
       END
     END ;
     IF res = -1 THEN Texts.WriteString(W, "Usage: ORX.WriteFile M.rsc M.mem") END ;
-    Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf); Oberon.Return(res)
+    EndLine; Oberon.Return(res)
   END WriteFile;
 
   PROCEDURE WriteCode*;  (*write code section of M.rsc in binary format to output file*)
@@ -103,7 +107,7 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 31.12.20 Extended Oberon*)
       END
     END ;
     IF res = -1 THEN Texts.WriteString(W, "Usage: ORX.WriteCode M.rsc M.code") END ;
-    Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf); Oberon.Return(res)
+    EndLine; Oberon.Return(res)
   END WriteCode;
 
   PROCEDURE MakeStream(VAR Rf, Rg: Files.Rider; blksize, destadr: INTEGER);
@@ -149,9 +153,8 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 31.12.20 Extended Oberon*)
       END
     END ;
     IF res = -1 THEN Texts.WriteString(W, "Usage: ORX.WriteStream M.bin M.stream blocksize destadr") END ;
-    Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf); Oberon.Return(res)
+    EndLine; Oberon.Return(res)
   END WriteStream;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR boot converter  AP 31.12.20");
-  Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR boot converter  AP 1.11.21"); EndLine
 END ORX.
