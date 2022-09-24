@@ -1,4 +1,4 @@
-MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.22 Extended Oberon*)
+MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.10.22 Extended Oberon*)
   IMPORT Files, ORS;
   (*Definition of data types Object and Type, which together form the data structure
     called "symbol table". Contains procedures for creation of Objects, and for search:
@@ -227,7 +227,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.22
             NEW(obj); obj.name := name; obj.class := Typ; obj.next := mod.dsc; mod.dsc := obj; obj.type := t;
             t.mno := mod.lev; t.typobj := obj; t.orgref := orgref
           END
-        ELSIF typtab[ref] # NIL THEN (*type was previously re-imported*) T := typtab[ref]
+        ELSIF typtab[ref] # NIL THEN T := typtab[ref]  (*already re-imported*)
         END ;
         typtab[ref] := T
       END ;
@@ -279,7 +279,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.22
         Files.Set(R, F, 0); Files.ReadInt(R, key); Files.ReadInt(R, key); Files.ReadString(R, modname);
         thismod := ThisModule(modid, modid1, TRUE, key);
         FOR class := TProc+1 TO maxTypTab-1 DO typtab[class] := NIL END ;
-        obj := thismod.dsc;  (*initialize typtab with previously re-imported types*)
+        obj := thismod.dsc;  (*initialize typtab with already re-imported types*)
         WHILE obj # NIL DO obj.type.mno := -obj.type.mno; typtab[obj.type.orgref] := obj.type; obj := obj.next END ;
         Read(R, class); (*version key*)
         IF class # versionkey THEN ORS.Mark("wrong version") END ;
@@ -289,7 +289,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.22
           InType(R, thismod, obj.type); obj.lev := -thismod.lev;
           IF class = Const THEN Files.ReadNum(R, obj.val)
           ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
-          ELSIF obj.type.mno < 0 THEN (*type was previously re-imported*) obj.type.mno := -obj.type.mno; obj := NIL
+          ELSIF obj.type.mno < 0 THEN obj.type.mno := -obj.type.mno; obj := NIL  (*already re-imported*)
           ELSIF obj.type.typobj = NIL THEN obj.type.typobj := obj
           END ;
           IF obj # NIL THEN obj.next := thismod.dsc; thismod.dsc := obj END ;
