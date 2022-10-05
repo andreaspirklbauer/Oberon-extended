@@ -203,19 +203,19 @@ MODULE D5;
 END D5.
 
 MODULE D6;
-  IMPORT M0, X := M0             (*mult def*)
+  IMPORT M0, X := M0;            (*mult def*)
 END D6.
 
 MODULE D7;
-  IMPORT X := M0, M0             (*mult def*)
+  IMPORT X := M0, M0;            (*mult def*)
 END D7.
 
 MODULE D8;
-  IMPORT X := M0, Y := M0        (*mult def*)
+  IMPORT X := M0, Y := M0;       (*mult def*)
 END D8.
 
 MODULE D9;
-  IMPORT M0, X := M0, Y := M0    (*2x mult def*)
+  IMPORT M0, X := M0, Y := M0;   (*2x mult def*)
 END D9.
 
 --------------------------- Test suite E (should produce error messages) ------------------------------------
@@ -229,7 +229,7 @@ BEGIN a := b
 END E1.
 
 MODULE E2;                                   (*mult def*)
-  IMPORT M0 := M1, M3, M0                    (*because the name M0 is used twice, once as an alias, once as a module name*)
+  IMPORT M0 := M1, M3, M0;                   (*because the name M0 is used twice, once as an alias, once as a module name*)
   TYPE T3* = RECORD (M3.T2) ch: CHAR END ;
   VAR a: M3.T2; b: T3; c: M0.T0;
 BEGIN a := b; c := b
