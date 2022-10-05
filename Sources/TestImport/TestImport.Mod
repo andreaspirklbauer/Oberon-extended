@@ -18,7 +18,8 @@ BEGIN a := b
 END M2.
 
 MODULE M3;                                  (*no error message*)
-  IMPORT M1, M2;
+  IMPORT M0, M1, M2;
+  TYPE T2* = RECORD (M0.T0) k: INTEGER END ;
 END M3.
 
 MODULE M4;                                  (*no error message*)
