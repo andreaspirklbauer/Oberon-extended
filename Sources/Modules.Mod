@@ -1,4 +1,4 @@
-MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.22 Extended Oberon*)
+MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Files;
   CONST versionkey = 1X; TR = 13; LNK = 15; DescSize = 96; MnLength = 32;
     noerr* = 0; nofile* = 1; badversion* = 2; badkey* = 3; badfile* = 4;
@@ -42,14 +42,14 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.22 E
   BEGIN res := n; importing := name
   END error;
 
-  PROCEDURE check(s: ARRAY OF CHAR);
+  PROCEDURE check(s: ARRAY OF CHAR; VAR slen: INTEGER);  (*slen includes trailing 0X*)
     VAR i: INTEGER; ch: CHAR;
-  BEGIN ch := s[0]; res := 1; i := 1;
+  BEGIN ch := s[0]; res := 1; i := 0; slen := 0;
     IF (ch >= "A") & (ch <= "Z") OR (ch >= "a") & (ch <= "z") THEN
-      REPEAT ch := s[i]; INC(i)
+      REPEAT INC(i); ch := s[i]
       UNTIL ~((ch >= "0") & (ch <= "9") OR (ch >= "A") & (ch <= "Z")
-        OR (ch >= "a") & (ch <= "z") OR (ch = ".")) OR (i = MnLength);
-      IF (i < MnLength) & (ch = 0X) THEN res := 0 END
+        OR (ch >= "a") & (ch <= "z") OR (ch = ".")) OR (i >= MnLength);
+      IF ch = 0X THEN res := 0; slen := i+1 END
     END
   END check;
 
@@ -74,7 +74,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.22 E
   BEGIN mod := root; error(noerr, name); nofimps := 0;
     WHILE (mod # NIL) & (name # mod.name) DO mod := mod.next END ;
     IF mod = NIL THEN (*load*)
-      check(name);
+      check(name, n);
       IF res = noerr THEN F := ThisFile(name) ELSE F := NIL END ;
       IF F # NIL THEN
         Files.Set(R, F, 0); Files.ReadString(R, name1); Files.ReadInt(R, key); Files.Read(R, ch);
@@ -111,7 +111,8 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.22 E
       END ;
       IF res = noerr THEN (*read file*)
         INC(p, DescSize); (*allocate descriptor*)
-        mod.name := name; mod.key := key; mod.refcnt := 0;
+        mod.name := name; mod.key := key; mod.refcnt := 0; i := n;
+        WHILE i < MnLength DO mod.name[i] := 0X; INC(i) END ;
         mod.selected := FALSE; mod.hidden := FALSE; mod.marked := FALSE; mod.sel := FALSE;
         mod.var := p; Files.ReadInt(R, n);
         WHILE n > 0 DO SYSTEM.PUT(p, 0); INC(p, 4); DEC(n, 4) END ;  (*variable space*)

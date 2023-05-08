@@ -58,3 +58,4 @@
 2022-08-15 MenuViewers - Eliminate flickering when continuously modifying viewers in MenuViewers.Modify'
 2022-08-28 Oberon - Skip over line feeds in Oberon.Skip, allowing regular .txt files as input for Oberon.Batch
 2022-08-31 ORB - detect bad keys among multiple imports or re-imports of the same module at compile time instead of only at module load time
+2023-05-01 Modules, ORL - Check of module name (allow module names with 31 chars) and clearing of mod.name array corrected

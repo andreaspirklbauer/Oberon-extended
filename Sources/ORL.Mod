@@ -1,4 +1,4 @@
-MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.22 Extended Oberon*)
+MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, Files, Modules, Texts, Oberon;
   CONST versionkey = 1X; versionkey0 = 0X; DescSize = 96; MnLength = 32; BootSec = 2; BootSize = 192; FPrint = 12345678H;
     noerr* = 0; nofile* = 1; badversion* = 2; badkey* = 3; badfile* = 4; nospace* = 5;
@@ -48,14 +48,14 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.22 Extended Oberon*)
   BEGIN res := n; importing := name
   END error;
 
-  PROCEDURE check(s: ARRAY OF CHAR);
+  PROCEDURE check(s: ARRAY OF CHAR; VAR slen: INTEGER);  (*slen includes trailing 0X*)
     VAR i: INTEGER; ch: CHAR;
-  BEGIN ch := s[0]; res := 1; i := 1;
+  BEGIN ch := s[0]; res := 1; i := 0; slen := 0;
     IF (ch >= "A") & (ch <= "Z") OR (ch >= "a") & (ch <= "z") THEN
-      REPEAT ch := s[i]; INC(i)
+      REPEAT INC(i); ch := s[i]
       UNTIL ~((ch >= "0") & (ch <= "9") OR (ch >= "A") & (ch <= "Z")
-        OR (ch >= "a") & (ch <= "z") OR (ch = ".")) OR (i = MnLength);
-      IF (i < MnLength) & (ch = 0X) THEN res := 0 END
+        OR (ch >= "a") & (ch <= "z") OR (ch = ".")) OR (i >= MnLength);
+      IF ch = 0X THEN res := 0; slen := i+1 END
     END
   END check;
 
@@ -80,7 +80,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.22 Extended Oberon*)
   BEGIN mod := root; error(noerr, name); nofimps := 0;
     WHILE (mod # NIL) & (name # mod.name) DO mod := mod.next END ;
     IF mod = NIL THEN (*link*)
-      check(name);
+      check(name, n);
       IF res = noerr THEN F := ThisFile(name) ELSE F := NIL END ;
       IF F # NIL THEN
         Files.Set(R, F, 0); Files.ReadString(R, name1); Files.ReadInt(R, key); Files.Read(R, ch);
@@ -113,8 +113,8 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.22 Extended Oberon*)
       END ;
       IF res = noerr THEN (*read file*)
         INC(p, DescSize); (*allocate descriptor*)
-        FOR i := 0 TO MnLength-1 DO mod.name[i] := 0X END ;
-        mod.name := name; mod.key := key; mod.refcnt := 0;
+        mod.name := name; mod.key := key; mod.refcnt := 0; i := n;
+        WHILE i < MnLength DO mod.name[i] := 0X; INC(i) END ;
         mod.selected := FALSE; mod.hidden := FALSE; mod.marked := FALSE; mod.sel := FALSE;
         mod.var := p; Files.ReadInt(R, n);
         WHILE n > 0 DO SYSTEM.PUT(p, 0); INC(p, 4); DEC(n, 4) END ;  (*variable space*)
@@ -430,6 +430,6 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.22 Extended Oberon*)
     EndLine
   END Execute;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.5.22"); EndLine;
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.5.23"); EndLine;
   limit := Kernel.stackOrg - Kernel.stackSize
 END ORL.
