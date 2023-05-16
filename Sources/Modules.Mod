@@ -352,7 +352,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
     END
   END FindClients;
 
-  PROCEDURE FindDynamicReferences*(typ, ptr, pvr: RefHandler; VAR resTyp, resPtr, resPvr: INTEGER; all: BOOLEAN);
+  PROCEDURE FindDynamicRefs*(typ, ptr, pvr: RefHandler; VAR resTyp, resPtr, resPvr: INTEGER; all: BOOLEAN);
     VAR mod: Module;
   BEGIN mod := root;
     WHILE mod # NIL DO
@@ -363,9 +363,9 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
       mod := mod.next
     END ;
     IF all THEN Kernel.Scan(typ, ptr, pvr, "", resTyp, resPtr, resPvr) END
-  END FindDynamicReferences;
+  END FindDynamicRefs;
 
-  PROCEDURE FindStaticReferences*(ptr, pvr: RefHandler; VAR resPtr, resPvr: INTEGER);
+  PROCEDURE FindStaticRefs*(ptr, pvr: RefHandler; VAR resPtr, resPvr: INTEGER);
     VAR mod: Module; pref, pvadr, r: LONGINT; continue: BOOLEAN;
   BEGIN resPtr := noref; resPvr := noref; mod := root; continue := (ptr # NIL) OR (pvr # NIL);
     WHILE continue & (mod # NIL) DO
@@ -387,7 +387,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
       END ;
       mod := mod.next
     END
-  END FindStaticReferences;
+  END FindStaticRefs;
 
   PROCEDURE HandleClient(mod, imp: Module; VAR continue: BOOLEAN): INTEGER;
   BEGIN (*mod imports imp*) continue := FALSE; RETURN 1
@@ -415,11 +415,11 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
     VAR resTyp, resPtr, resPvr: INTEGER;
   BEGIN FindClients(HandleClient, res);
     IF res > noref THEN res := clients
-    ELSE FindDynamicReferences(HandleRef, HandleRef, HandleRef, resTyp, resPtr, resPvr, TRUE);
+    ELSE FindDynamicRefs(HandleRef, HandleRef, HandleRef, resTyp, resPtr, resPvr, TRUE);
       IF resTyp > noref THEN res := dyntypes
       ELSIF resPtr > noref THEN res := dynptrs
       ELSIF resPvr > noref THEN res := dynpvrs
-      ELSE FindStaticReferences(HandleRef, HandleRef, resPtr, resPvr);
+      ELSE FindStaticRefs(HandleRef, HandleRef, resPtr, resPvr);
         IF resPtr > noerr THEN res := statptrs ELSIF resPvr > noerr THEN res := statpvrs END
       END
     END
