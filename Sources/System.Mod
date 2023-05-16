@@ -388,34 +388,34 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 1.5.23 Extended Ob
     RETURN i
   END WriteRef;
 
-  PROCEDURE WriteReferences;  (*write references from each unselected module to any of the selected modules*)
+  PROCEDURE WriteRefs;  (*write references from each unselected module to any of the selected modules*)
     VAR resTyp, resPtr, resPvr: INTEGER;
   BEGIN Oberon.ClearPar;  (*exclude viewers that are reachable only via Oberon.Par.vwr*)
-    M := NIL; ref := Modules.dyntypes; Modules.FindDynamicReferences(WriteRef, NIL, NIL, resTyp, resPtr, resPvr, FALSE);
-    M := NIL; ref := Modules.dynptrs; Modules.FindDynamicReferences(NIL, WriteRef, NIL, resTyp, resPtr, resPvr, FALSE);
-    M := NIL; ref := Modules.dynpvrs; Modules.FindDynamicReferences(NIL, NIL, WriteRef, resTyp, resPtr, resPvr, FALSE);
-    M := NIL; ref := Modules.statptrs; Modules.FindStaticReferences(WriteRef, NIL, resPtr, resPvr);
-    M := NIL; ref := Modules.statpvrs; Modules.FindStaticReferences(NIL, WriteRef, resPtr, resPvr);
+    M := NIL; ref := Modules.dyntypes; Modules.FindDynamicRefs(WriteRef, NIL, NIL, resTyp, resPtr, resPvr, FALSE);
+    M := NIL; ref := Modules.dynptrs; Modules.FindDynamicRefs(NIL, WriteRef, NIL, resTyp, resPtr, resPvr, FALSE);
+    M := NIL; ref := Modules.dynpvrs; Modules.FindDynamicRefs(NIL, NIL, WriteRef, resTyp, resPtr, resPvr, FALSE);
+    M := NIL; ref := Modules.statptrs; Modules.FindStaticRefs(WriteRef, NIL, resPtr, resPvr);
+    M := NIL; ref := Modules.statpvrs; Modules.FindStaticRefs(NIL, WriteRef, resPtr, resPvr);
     Texts.Append(Oberon.Log, W.buf)
-  END WriteReferences;
+  END WriteRefs;
 
-  PROCEDURE ShowRefs(name: ARRAY OF CHAR);
+  PROCEDURE showrefs(name: ARRAY OF CHAR);
   BEGIN
-    IF Modules.NofSelected > 0 THEN WriteReferences; Modules.Deselect END
+    IF Modules.NofSelected > 0 THEN WriteRefs; Modules.Deselect END
+  END showrefs;
+
+  PROCEDURE ShowRefs*;  (*show references from all modules to any of the specified modules individually*)
+    VAR S: Texts.Scanner;
+  BEGIN Texts.WriteString(W, "System.ShowRefs"); EndLine;
+    Modules.Deselect; Select(S, TRUE, TRUE, FALSE, FALSE, showrefs)
   END ShowRefs;
 
-  PROCEDURE ShowReferences*;  (*show references from all modules to any of the specified modules individually*)
+  PROCEDURE ShowGroupRefs*;  (*show references from all modules outside the group to the specified module group*)
     VAR S: Texts.Scanner;
-  BEGIN Texts.WriteString(W, "System.ShowReferences"); EndLine;
-    Modules.Deselect; Select(S, TRUE, TRUE, FALSE, FALSE, ShowRefs)
-  END ShowReferences;
-
-  PROCEDURE ShowGroupReferences*;  (*show references from all modules outside the group to the specified module group*)
-    VAR S: Texts.Scanner;
-  BEGIN Texts.WriteString(W, "System.ShowGroupReferences");
+  BEGIN Texts.WriteString(W, "System.ShowGroupRefs");
     Modules.Deselect; Select(S, TRUE, TRUE, FALSE, FALSE, WriteName); EndLine;
-    IF Modules.NofSelected > 0 THEN WriteReferences; Modules.Deselect END
-  END ShowGroupReferences;
+    IF Modules.NofSelected > 0 THEN WriteRefs; Modules.Deselect END
+  END ShowGroupRefs;
 
   PROCEDURE Show(this, clients, imports: BOOLEAN);
     VAR S: Texts.Scanner;
@@ -455,7 +455,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 1.5.23 Extended Ob
         ELSE Texts.WriteString(W, " unloading failed, try /f option");
           IF Modules.res = Modules.clients THEN M := NIL; Modules.FindClients(WriteClient, res) END
         END ;
-        EndLine; WriteReferences
+        EndLine; WriteRefs
       END ;
       Modules.Deselect; Oberon.Collect(0)
     END

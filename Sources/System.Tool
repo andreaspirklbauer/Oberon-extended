@@ -18,8 +18,8 @@ System.RenameFiles ~         Stars.Open Stars.Run System.Free Stars~
 System.DeleteFiles ~           14.ShowModules  *Stars.Stop
 
 System.ShowModules  System.ShowCommands ^  Modules.Collect
-System.ShowImports ORP~  System.ShowReferences Hilbert Sierpinski ~
-System.ShowClients ORS~  System.ShowGroupReferences Hilbert Viewers ~
+System.ShowImports ORP~  System.ShowRefs Hilbert Sierpinski ~
+System.ShowClients ORS~  System.ShowGroupRefs Hilbert Viewers ~
                                 
 PCLink1.Run  PCLink1.Stop    Oberon0Tool.Run  Oberon0Tool.Stop  # run only of of these 2
 Hilbert.Draw  Sierpinski.Draw  Blink.Run  Stars.Open

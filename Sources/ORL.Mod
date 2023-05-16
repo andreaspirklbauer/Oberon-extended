@@ -18,7 +18,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
       key*, num*, size*, refcnt*: INTEGER;
       var*, str*, tdx*, prg*, imp*, cmd*, ent*, ptr*, pvr*: INTEGER;  (*addresses*)
       selected*, marked, hidden, sel: BOOLEAN;
-      finalize: Command
+      final: Command
     END ;
 
   VAR root: Module;
@@ -145,7 +145,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
         Files.ReadInt(R, fixorgT); Files.ReadInt(R, fixorgM);
         Files.ReadInt(R, w); body := SYSTEM.VAL(Command, mod.prg + w - Start);
         Files.ReadInt(R, w);
-        IF w >= 0 THEN mod.finalize := SYSTEM.VAL(Command, mod.prg + w - Start) ELSE mod.finalize := NIL END ;
+        IF w >= 0 THEN mod.final := SYSTEM.VAL(Command, mod.prg + w - Start) ELSE mod.final := NIL END ;
         Files.Read(R, ch);
         IF ch # "O" THEN mod := NIL; error(badfile, name) END
       END ;
@@ -354,7 +354,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
       M.ent := M.ent + dst;
       M.ptr := M.ptr + dst;
       M.pvr := M.pvr + dst;
-      IF M.finalize # NIL THEN M.finalize := SYSTEM.VAL(Command, SYSTEM.VAL(INTEGER, M.finalize) + dst) END
+      IF M.final # NIL THEN M.final := SYSTEM.VAL(Command, SYSTEM.VAL(INTEGER, M.final) + dst) END
     END
   END RelocateLoaded;
 

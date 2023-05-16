@@ -19,7 +19,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
       key*, num*, size*, refcnt*: INTEGER;
       var*, str*, tdx*, prg*, imp*, cmd*, ent*, ptr*, pvr*: INTEGER;  (*addresses*)
       selected*, marked, hidden, sel: BOOLEAN;
-      finalize: Command
+      final: Command
     END ;
 
     ClientHandler* = PROCEDURE(mod, imp: Module; VAR continue: BOOLEAN): INTEGER;
@@ -143,7 +143,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
         Files.ReadInt(R, fixorgT); Files.ReadInt(R, fixorgM);
         Files.ReadInt(R, w); body := SYSTEM.VAL(Command, mod.prg + w);
         Files.ReadInt(R, w);
-        IF w >= 0 THEN mod.finalize := SYSTEM.VAL(Command, mod.prg + w) ELSE mod.finalize := NIL END ;
+        IF w >= 0 THEN mod.final := SYSTEM.VAL(Command, mod.prg + w) ELSE mod.final := NIL END ;
         Files.Read(R, ch);
         IF ch # "O" THEN mod := NIL; error(badfile, name) END
       END ;
@@ -427,20 +427,20 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
 
   (*--------------------------- unloading ---------------------------*)
 
-  PROCEDURE SetFinalizer*(finalize: Command);
+  PROCEDURE Final*(final: Command); (*set module finalization sequence*)
     VAR u, v, w: INTEGER; mod: Module;
   BEGIN u := SYSTEM.REG(LNK); mod := root;
     WHILE (mod # NIL) & ((u < mod.prg) OR (u >= mod.imp)) DO mod := mod.next END ; (*search for caller*)
-    IF mod # NIL THEN v := SYSTEM.VAL(INTEGER, finalize);
+    IF mod # NIL THEN v := SYSTEM.VAL(INTEGER, final);
       SYSTEM.GET(mod.ent, w); w := mod.prg + w; (*module initialization body*)
-      IF (v >= mod.prg) & (v < w) & (u >= w) & (mod.finalize = NIL) THEN mod.finalize := finalize ELSE res := badfin END
+      IF (v >= mod.prg) & (v < w) & (u >= w) & (mod.final = NIL) THEN mod.final := final ELSE res := badfin END
     END
-  END SetFinalizer;
+  END Final;
 
   PROCEDURE Unload(mod: Module); (*from memory*)
     VAR imp: Module; p, q: INTEGER;
   BEGIN (*mod.refcnt = 0 & mod.name[0] # 0X*)
-    IF mod.finalize # NIL THEN mod.finalize END ;
+    IF mod.final # NIL THEN mod.final END ;
     mod.name[0] := 0X; p := mod.imp; q := mod.cmd;
     WHILE p < q DO (*imports*) SYSTEM.GET(p, imp); DEC(imp.refcnt); INC(p, 4) END ;
     IF mod.hidden THEN mod.hidden := FALSE; DEC(NofHidden) END ;
