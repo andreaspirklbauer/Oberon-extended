@@ -1,4 +1,4 @@
-MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.10.22 Extended Oberon*)
+MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23 Extended Oberon*)
   IMPORT Files, ORS;
   (*Definition of data types Object and Type, which together form the data structure
     called "symbol table". Contains procedures for creation of Objects, and for search:
@@ -269,12 +269,13 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.10.2
   PROCEDURE Import*(VAR modid, modid1: ORS.Ident);
     VAR key: LONGINT; class: INTEGER;
       obj, thismod: Object;
-      modname, fname: ORS.Ident;
+      t: Type;
+      name, modname: ORS.Ident;
       F: Files.File; R: Files.Rider;
   BEGIN
     IF modid1 = "SYSTEM" THEN
       thismod := ThisModule(modid, modid1, TRUE, key); DEC(nofmod); thismod.lev := 0; thismod.dsc := system
-    ELSE MakeFileName(fname, modid1, ".smb"); F := Files.Old(fname);
+    ELSE MakeFileName(name, modid1, ".smb"); F := Files.Old(name);
       IF F # NIL THEN
         Files.Set(R, F, 0); Files.ReadInt(R, key); Files.ReadInt(R, key); Files.ReadString(R, modname);
         thismod := ThisModule(modid, modid1, TRUE, key);
@@ -285,14 +286,17 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.10.2
         IF class # versionkey THEN ORS.Mark("wrong version") END ;
         Read(R, class);
         WHILE class # 0 DO
-          NEW(obj); obj.class := class; Files.ReadString(R, obj.name);
-          InType(R, thismod, obj.type); obj.lev := -thismod.lev;
-          IF class = Const THEN Files.ReadNum(R, obj.val)
-          ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
-          ELSIF obj.type.mno < 0 THEN obj.type.mno := -obj.type.mno; obj := NIL  (*already re-imported*)
-          ELSIF obj.type.typobj = NIL THEN obj.type.typobj := obj
+          Files.ReadString(R, name); InType(R, thismod, t);
+          IF t.mno < 0 THEN t.mno := -t.mno;  (*already re-imported*)
+            IF (class = Const) OR (class = Var) THEN Files.ReadNum(R, key) END
+          ELSE
+            NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
+            IF class = Const THEN Files.ReadNum(R, obj.val)
+            ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
+            ELSIF t.typobj = NIL THEN t.typobj := obj
+            END ;
+            obj.next := thismod.dsc; thismod.dsc := obj
           END ;
-          IF obj # NIL THEN obj.next := thismod.dsc; thismod.dsc := obj END ;
           Read(R, class)
         END
       ELSE ORS.Mark("import not available")
