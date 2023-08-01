@@ -59,4 +59,4 @@
 2022-08-28 Oberon - Skip over line feeds in Oberon.Skip, now also allowing regular .txt files as input for Oberon.Batch
 2022-08-31 ORB - Detect bad keys among multiple imports or re-imports of the same module at compile time instead of only at module load time
 2023-05-01 Modules, ORL - Check of module name improved (now allow module names with 31 chars), clearing of mod.name array corrected
-2023-08-01 ORB - Minimize heap space consumption in ORB.Import in case an imported type has previously been read from another symbol file
+2023-08-01 ORB - Minimize heap space consumption in ORB.Import when previously re-imported types are explicitly imported, disallow recursive imports

@@ -68,6 +68,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     intType*, realType*, setType*, nilType*, noType*, strType*: Type;
     nofmod, Ref: INTEGER;
     typtab: ARRAY maxTypTab OF Type;
+    self: ORS.Ident;  (*name of module being compiled*)
 
   PROCEDURE NewObj*(VAR obj: Object; id: ORS.Ident; class: INTEGER);  (*insert new Object with name id*)
     VAR new, x: Object;
@@ -185,6 +186,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     IF obj = NIL THEN obj := obj1.next;  (*search for module*)
       WHILE (obj # NIL) & (obj(Module).orgname # orgname) DO obj1 := obj; obj := obj1.next END ;
       IF obj = NIL THEN (*insert new module*)
+        IF orgname = self THEN ORS.Mark("recursive import not allowed") END ;
         NEW(mod); mod.class := Mod; mod.rdo := decl;
         mod.name := name; mod.orgname := orgname; mod.val := key;
         mod.lev := nofmod; INC(nofmod); mod.type := noType; mod.dsc := NIL; mod.next := NIL;
@@ -421,8 +423,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     END
   END Export;
 
-  PROCEDURE Init*;
-  BEGIN topScope := universe; nofmod := 1
+  PROCEDURE Init*(modid: ORS.Ident);
+  BEGIN self := modid; topScope := universe; nofmod := 1
   END Init;
 
   PROCEDURE type(ref, form: INTEGER; size: LONGINT): Type;
