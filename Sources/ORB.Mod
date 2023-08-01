@@ -289,8 +289,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
         Read(R, class);
         WHILE class # 0 DO
           Files.ReadString(R, name); InType(R, thismod, t);
-          IF t.mno < 0 THEN t.mno := -t.mno;  (*already re-imported*)
-            IF (class = Const) OR (class = Var) THEN Files.ReadNum(R, key) END
+          IF t.mno < 0 THEN t.mno := -t.mno  (*type already re-imported*)
           ELSE
             NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
             IF class = Const THEN Files.ReadNum(R, obj.val)
