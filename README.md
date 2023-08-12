@@ -14,7 +14,7 @@ Features
 * Improved import/export, e.g. import any number of modules and in any order
 * Simple batch execution facility
 
-**Last release:** 1.8.2023 / Extended-Oberon-1.9
+**Last release:** 1.8.2023 / Extended-Oberon-1.8
 
 **Last update:** 1.8.2023
 
