@@ -1,4 +1,4 @@
-MODULE M1;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
+MODULE M1;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   IMPORT M0, Out;
 
   TYPE
@@ -21,19 +21,21 @@ MODULE M1;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
     rec.Method1^(str, p)
   END Method1;
 
+  (*
   PROCEDURE (VAR rec: Rec1Ext1) Method1P (str: ARRAY OF CHAR; p: LONGINT); (*private*)
-  BEGIN rec.Method1^(str, p)
+  BEGIN rec.Method1^(str, p)  (*would lead to a "redefined method must be called from overriding method" error*)
   END Method1P;
 
   PROCEDURE (VAR rec: Rec1Ext1) Method2P (str: ARRAY OF CHAR; p: LONGINT); (*private*)
-  BEGIN rec.Method1^(str, p)
+  BEGIN rec.Method1^(str, p)  (*would lead to a "redefined method must be called from overriding method" error*)
   END Method2P;
-
+  *)
+  
   PROCEDURE (VAR rec: Rec1Ext1) Method2* (str: ARRAY OF CHAR; p: LONGINT); (*exported*)
   BEGIN Out.String("  Hello from M1.Rec1Ext1.Method2 (overwritten method); str = "); Out.String(str);
     Out.String(", cnt ="); Out.Int(p, 4); Out.String(", rec.x1 ="); Out.Int(rec.x1, 4); INC(rec.x1); Out.Ln;
-    Out.String("  Calling super method M1.Rec1Ext1.Method1^ = M0.Rec1.Method1 with str = Method1"); Out.Ln;
-    rec.Method1^("Method1", p)
+    Out.String("  Calling super method M1.Rec1Ext1.Method2^ = M0.Rec1.Method2 with str = Method2"); Out.Ln;
+    rec.Method2^("Method2", p)
   END Method2;
 
   PROCEDURE (ptr: PtrRec1Ext1) Method3* (str: ARRAY OF CHAR; p: LONGINT);

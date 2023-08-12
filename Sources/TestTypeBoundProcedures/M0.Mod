@@ -1,4 +1,4 @@
-MODULE M0;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
+MODULE M0;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   IMPORT Out;
 
   TYPE
@@ -26,6 +26,11 @@ MODULE M0;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
   BEGIN Out.String("  Hello from M0.Rec1.Method1; str = "); Out.String(str);
     Out.String(", cnt ="); Out.Int(p, 4); Out.String(", rec.x1 ="); Out.Int(rec.x1, 4); INC(rec.x1); Out.Ln
   END Method1;
+
+  PROCEDURE (VAR rec: Rec1) Method2* (str: ARRAY OF CHAR; p: LONGINT); (*exported*)
+  BEGIN Out.String("  Hello from M0.Rec1.Method2; str = "); Out.String(str);
+    Out.String(", cnt ="); Out.Int(p, 4); Out.String(", rec.x1 ="); Out.Int(rec.x1, 4); INC(rec.x1); Out.Ln
+  END Method2;
 
   PROCEDURE (ptr: PtrRec1) Method3* (str: ARRAY OF CHAR; p: LONGINT); (*exported*)
   BEGIN Out.String("  Hello from M0.PtrRec1.Method3; str = "); Out.String(str);

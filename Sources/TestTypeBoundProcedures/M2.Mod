@@ -1,6 +1,6 @@
-MODULE M2;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
+MODULE M2;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   IMPORT (*M0, *) M1, Out;
-
+    
   TYPE
     Rec1Ext11* = RECORD (M1.Rec1Ext1) a3, b3*: INTEGER END ;
     Rec1Ext121* = RECORD (M1.Rec1Ext12) p3, q3*: INTEGER END ;

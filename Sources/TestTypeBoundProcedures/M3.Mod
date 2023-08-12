@@ -1,4 +1,4 @@
-MODULE M3;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
+MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   IMPORT Out;
 
   TYPE
@@ -24,7 +24,24 @@ MODULE M3;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
 
   PROCEDURE (VAR r: Rec) Method2*(str: ARRAY OF CHAR; a: INTEGER; VAR b: INTEGER);
   BEGIN Out.String("  Hello from M3.Rec.Method2; str = "); Out.String(str);
-    Write(r.x0, r.x1, r.x2, r.x3, r.x4, r.x5, r.x6, a, b); INC(b)
+    Write(r.x0, r.x1, r.x2, r.x3, r.x4, r.x5, r.x6, a, b); INC(b);
+
+    (*
+
+    (*super call of a method bound to the base type of an extension) via pointer*)
+    Out.String("Calling ptrext.Method2 with str = Method2s (super call via pointer)"); Out.Ln;
+    INC(ptrext.x2);
+    ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln;
+    (*would lead to a "receiver must be the same as in overriding method" error*)
+
+    
+    (*super call of a method bound to the base type of an extension) via record*)
+    Out.String("Calling recext.Method2^ with str = Method2s (super call via record)"); Out.Ln;
+    recext.x2 := 1;
+    recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln
+    (*would lead to a "receiver must be the same as in overriding method" error*)
+
+    *)
   END Method2;
 
   PROCEDURE (VAR r: Rec) Method3*(str: ARRAY OF CHAR; a: INTEGER; VAR b: INTEGER): INTEGER;
@@ -106,15 +123,21 @@ MODULE M3;  (*test type-bound procedures / AP 1.5.21 Extended Oberon*)
     INC(ptrext.x2); ptrext.Method2("Method2e", ptrext.x2, B); Out.Ln
   END Go2e;
 
+  (*
   PROCEDURE Go2s*;  (*super call of a method bound to the base type of an extension) via pointer*)
   BEGIN Out.String("Calling ptrext.Method2 with str = Method2s (super call via pointer)"); Out.Ln;
-    INC(ptrext.x2); ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln
+    INC(ptrext.x2);
+    ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln
+    (*would lead to a "redefined method must be called from overriding method" error*)
   END Go2s;
 
   PROCEDURE Go2sr*;  (*super call of a method bound to the base type of an extension) via record*)
   BEGIN Out.String("Calling recext.Method2^ with str = Method2s (super call via record)"); Out.Ln;
-    recext.x2 := 1; recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln END
-  Go2sr;
+    recext.x2 := 1;
+    recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln
+    (*would lead to a "redefined method must be called from overriding method" error*)
+  END Go2sr;
+  *)
 
   PROCEDURE Go3*;  (*call of a method that is a function procedure*)
     VAR res: INTEGER;
@@ -208,8 +231,6 @@ M3.Go1b     # Method1 (caller EXPLICITLY de-references ptr^ BEFORE calling a met
 M3.Go2       # Method2 (caller AUTOMATICALLY passes the de-referenced ptr^ to a method which accepts a VAR record)
 M3.Go2r     # Method2 (a statically declared global record can also be a receiver)
 M3.Go2e     # Method2 (call a method that is bound to a record extension)
-M3.Go2s     # Method2 (super call of a method bound to the base type of an extension) via pointer
-M3.Go2sr     # Method2 (super call of a method bound to the base type of an extension) via record
 
 M3.Go3       # Method3 call (call of a method that is a function procedure)
 
