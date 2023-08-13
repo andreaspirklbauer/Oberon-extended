@@ -219,7 +219,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     ELSE NEW(t); T := t; t.mno := thismod.lev; t.orgref := ref;
       IF ref > 0 THEN  (*named type*)
         Files.ReadString(R, modname);
-        IF modname[0] #  0X THEN  (*re-import*)
+        IF modname[0] # 0X THEN  (*re-import*)
           Files.ReadInt(R, key); Files.ReadString(R, name); Read(R, orgref);
           mod := ThisModule(modname, modname, FALSE, key);
           obj := mod.dsc;  (*search type*)
@@ -290,8 +290,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
         WHILE class # 0 DO
           Files.ReadString(R, name); InType(R, thismod, t);
           IF t.mno < 0 THEN t.mno := -t.mno  (*type already re-imported*)
-          ELSE
-            NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
+          ELSE NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
             IF class = Const THEN Files.ReadNum(R, obj.val)
             ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
             ELSIF t.typobj = NIL THEN t.typobj := obj
