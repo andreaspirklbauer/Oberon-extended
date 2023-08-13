@@ -11,12 +11,11 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     (* class values*) Head* = 0;
       Const* = 1; Var* = 2; Par* = 3; Fld* = 4; Typ* = 5;
       SProc* = 6; SFunc* = 7; Mod* = 8;
-      HidPtr = 9; HidPvr = 10;
 
     (* form values*)
       Byte* = 1; Bool* = 2; Char* = 3; Int* = 4; Real* = 5; Set* = 6;
-      Pointer* = 7; NilTyp* = 8; NoTyp* = 9; Proc* = 10; TProc* = 11;
-      String* = 12; Array* = 13; Record* = 14;
+      Pointer* = 7; NilTyp* = 8; NoTyp* = 9; Proc* = 10;
+      String* = 11; Array* = 12; Record* = 13; TProc* = 14;
       Ptrs* = {Pointer, NilTyp}; Procs* = {Proc, NoTyp};
 
   TYPE Object* = POINTER TO ObjDesc;
@@ -248,8 +247,10 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
           IF fld.name[0] # 0X THEN fld.expo := TRUE; InType(R, thismod, fld.type); Files.ReadNum(R, fld.val)
           ELSE (*hidden*) fld.expo := FALSE;
             IF class = Const THEN (*type-bound procedure*) fld.type := byteType  (*method*)
-            ELSE fld.class := Fld; Files.ReadNum(R, fld.val);
-              IF class = HidPtr THEN fld.type := nilType (*ptr*) ELSE fld.type := noType (*pvr*) END
+            ELSE Files.ReadNum(R, fld.val);
+              IF fld.val < 0 THEN fld.val := -fld.val-1; fld.type := noType  (*procedure*)
+              ELSE fld.type := nilType  (*pointer*)
+              END
             END
           END ;
           IF class = Const THEN Files.ReadNum(R, fld.lev) END ;  (*mthno*)
@@ -280,7 +281,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
       IF F # NIL THEN
         Files.Set(R, F, 0); Files.ReadInt(R, key); Files.ReadInt(R, key); Files.ReadString(R, modname);
         thismod := ThisModule(modid, modid1, TRUE, key);
-        FOR class := Record+1 TO maxTypTab-1 DO typtab[class] := NIL END ;
+        FOR class := TProc+1 TO maxTypTab-1 DO typtab[class] := NIL END ;
         obj := thismod.dsc;  (*initialize typtab with already re-imported types*)
         WHILE obj # NIL DO obj.type.mno := -obj.type.mno; typtab[obj.type.orgref] := obj.type; obj := obj.next END ;
         Read(R, class); (*version key*)
@@ -326,8 +327,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     PROCEDURE FindHiddenFields(VAR R: Files.Rider; typ: Type; off: LONGINT);
       VAR fld: Object; i, s: LONGINT;
     BEGIN
-      IF typ.form IN Ptrs THEN Write(R, HidPtr); Write(R, 0); Files.WriteNum(R, off)
-      ELSIF typ.form IN Procs THEN Write(R, HidPvr); Write(R, 0); Files.WriteNum(R, off)
+      IF typ.form IN Ptrs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, off)
+      ELSIF typ.form IN Procs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, -off-1)
       ELSIF typ.form = Record THEN fld := typ.dsc;
         WHILE fld # NIL DO FindHiddenFields(R, fld.type, fld.val + off); fld := fld.next END
       ELSIF typ.form = Array THEN s := typ.base.size;
@@ -385,7 +386,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
       obj: Object;
       filename: ORS.Ident;
       F, F1: Files.File; R, R1: Files.Rider;
-  BEGIN Ref := Record + 1; MakeFileName(filename, modid, ".smb");
+  BEGIN Ref := TProc + 1; MakeFileName(filename, modid, ".smb");
     F := Files.New(filename); Files.Set(R, F, 0);
     Files.WriteInt(R, 0); (*placeholder*)
     Files.WriteInt(R, 0); (*placeholder for key to be inserted at the end*)
@@ -406,7 +407,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
       obj := obj.next
     END ;
     REPEAT Write(R, 0) UNTIL Files.Length(F) MOD 4 = 0;
-    FOR Ref := Record+1 TO maxTypTab-1 DO typtab[Ref] := NIL END ;
+    FOR Ref := TProc+1 TO maxTypTab-1 DO typtab[Ref] := NIL END ;
     Files.Set(R, F, 0); sum := 0; Files.ReadInt(R, x);  (* compute key (checksum) *)
     WHILE ~R.eof DO sum := sum + x; Files.ReadInt(R, x) END ;
     F1 := Files.Old(filename); (*sum is new key*)
