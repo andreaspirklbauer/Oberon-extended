@@ -246,9 +246,11 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
           last := fld;
           IF fld.name[0] # 0X THEN fld.expo := TRUE; InType(R, thismod, fld.type); Files.ReadNum(R, fld.val)
           ELSE (*hidden*) fld.expo := FALSE;
-            IF class = Const THEN (*type-bound procedure*) fld.type := strType  (*mth*)
-            ELSE (*pointer or procedure*) Files.ReadNum(R, fld.val);
-              IF fld.val < 0 THEN fld.val := -fld.val-1; fld.type := noType (*pvr*) ELSE fld.type := nilType (*ptr*) END
+            IF class = Const THEN fld.type := strType  (*type-bound procedure*)
+            ELSE Files.ReadNum(R, fld.val);  (*offset*)
+              IF fld.val < 0 THEN fld.val := -fld.val-1; fld.type := noType  (*procedure*)
+              ELSE fld.type := nilType  (*pointer*)
+              END
             END
           END ;
           IF class = Const THEN Files.ReadNum(R, fld.lev) END ;  (*mthno*)
@@ -322,17 +324,17 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
       END
     END OutPar;
 
-    PROCEDURE FindHiddenFields(VAR R: Files.Rider; typ: Type; off: LONGINT);
+    PROCEDURE FindHiddenOffsets(VAR R: Files.Rider; typ: Type; off: LONGINT);
       VAR fld: Object; i, s: LONGINT;
     BEGIN
       IF typ.form IN Ptrs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, off)  (*pointer*)
       ELSIF typ.form IN Procs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, -off-1)  (*procedure*)
       ELSIF typ.form = Record THEN fld := typ.dsc;
-        WHILE fld # NIL DO FindHiddenFields(R, fld.type, fld.val + off); fld := fld.next END
+        WHILE fld # NIL DO FindHiddenOffsets(R, fld.type, fld.val + off); fld := fld.next END
       ELSIF typ.form = Array THEN s := typ.base.size;
-        FOR i := 0 TO typ.len-1 DO FindHiddenFields(R, typ.base, i*s + off) END
+        FOR i := 0 TO typ.len-1 DO FindHiddenOffsets(R, typ.base, i*s + off) END
       END
-    END FindHiddenFields;
+    END FindHiddenOffsets;
 
   BEGIN
     IF t.ref > 0 THEN (*type was already output*) Write(R, -t.ref)
@@ -361,7 +363,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
         Files.WriteNum(R, t.nofpar); Files.WriteNum(R, t.size);
         fld := t.dsc;
         WHILE fld # bot DO  (*fields*)
-          IF fld.class = Const THEN (*type-bound procedure*) Write(R, Const);
+          IF fld.class = Const THEN Write(R, Const);  (*type-bound procedure*)
             IF fld.expo THEN Files.WriteString(R, fld.name); OutType(R, fld.type);
               IF t.mno > 0 THEN Files.WriteNum(R, fld.val) ELSE Files.WriteNum(R, fld.exno) END  (*exno*)
             ELSE (*hidden*) Write(R, 0)
@@ -369,7 +371,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
             Files.WriteNum(R, fld.lev)  (*mthno*)
           ELSIF fld.expo THEN
             Write(R, Fld); Files.WriteString(R, fld.name); OutType(R, fld.type); Files.WriteNum(R, fld.val)  (*offset*)
-          ELSE (*hidden*) FindHiddenFields(R, fld.type, fld.val)
+          ELSE (*hidden*) FindHiddenOffsets(R, fld.type, fld.val)
           END ;
           fld := fld.next
         END ;
