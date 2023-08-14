@@ -105,14 +105,14 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     RETURN fld
   END thisfield;
 
-  PROCEDURE FindFld*(id: ORS.Ident; rec: Type): Object;  (*search id in fields of rec proper, but not its base types*)
+  PROCEDURE FindField*(id: ORS.Ident; rec: Type): Object;  (*search id in fields of rec proper, but not its base types*)
     VAR fld, bot: Object;
   BEGIN fld := rec.dsc;
     IF rec.base # NIL THEN bot := rec.base.dsc ELSE bot := NIL END ;
     WHILE (fld # bot) & (fld.name # id) DO fld := fld.next END ;
     IF fld = bot THEN fld := NIL END ;
     RETURN fld
-  END FindFld;
+  END FindField;
 
   PROCEDURE NofMethods*(rec: Type): INTEGER;  (*number of methods bound to rec and its base types*)
     VAR fld: Object; max: INTEGER;
@@ -246,11 +246,9 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
           last := fld;
           IF fld.name[0] # 0X THEN fld.expo := TRUE; InType(R, thismod, fld.type); Files.ReadNum(R, fld.val)
           ELSE (*hidden*) fld.expo := FALSE;
-            IF class = Const THEN (*type-bound procedure*) fld.type := byteType  (*method*)
-            ELSE Files.ReadNum(R, fld.val);
-              IF fld.val < 0 THEN fld.val := -fld.val-1; fld.type := noType  (*procedure*)
-              ELSE fld.type := nilType  (*pointer*)
-              END
+            IF class = Const THEN (*type-bound procedure*) fld.type := strType  (*mth*)
+            ELSE (*pointer or procedure*) Files.ReadNum(R, fld.val);
+              IF fld.val < 0 THEN fld.val := -fld.val-1; fld.type := noType (*pvr*) ELSE fld.type := nilType (*ptr*) END
             END
           END ;
           IF class = Const THEN Files.ReadNum(R, fld.lev) END ;  (*mthno*)
@@ -327,8 +325,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.8.23
     PROCEDURE FindHiddenFields(VAR R: Files.Rider; typ: Type; off: LONGINT);
       VAR fld: Object; i, s: LONGINT;
     BEGIN
-      IF typ.form IN Ptrs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, off)
-      ELSIF typ.form IN Procs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, -off-1)
+      IF typ.form IN Ptrs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, off)  (*pointer*)
+      ELSIF typ.form IN Procs THEN Write(R, Fld); Write(R, 0); Files.WriteNum(R, -off-1)  (*procedure*)
       ELSIF typ.form = Record THEN fld := typ.dsc;
         WHILE fld # NIL DO FindHiddenFields(R, fld.type, fld.val + off); fld := fld.next END
       ELSIF typ.form = Array THEN s := typ.base.size;

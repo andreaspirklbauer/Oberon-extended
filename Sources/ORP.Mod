@@ -137,9 +137,9 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF sym = ORS.arrow THEN (*super call*)
       IF obj.type.dsc = ORB.topScope.next THEN
         IF obj.type.dsc = x.obj THEN
-          ORS.Get(sym); xt := x.type; fld := ORB.FindFld(obj.name, xt);
+          ORS.Get(sym); xt := x.type; fld := ORB.FindField(obj.name, xt);
           IF fld # NIL THEN xt := xt.base; fld := NIL;
-            WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindFld(obj.name, xt); xt := xt.base END ;
+            WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindField(obj.name, xt); xt := xt.base END ;
             IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN obj := fld;
               CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base)
             ELSE ORS.Mark("method undefined in base types")
