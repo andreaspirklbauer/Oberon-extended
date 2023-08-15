@@ -3,7 +3,7 @@ MODULE M6;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
 
   TYPE Ptr* = M5.Ptr;
 
-  VAR ptr*: M5.Ptr;  (*re-export type M0.Ptr*)
+  VAR ptr*: M5.Ptr;  (*re-export type M5.Ptr*)
 
   PROCEDURE Go*;
   BEGIN ptr.ExportedMethod("M6")
