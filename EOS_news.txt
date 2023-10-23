@@ -62,3 +62,4 @@
 2023-08-01 ORB - Minimize heap space consumption in ORB.Import when previously re-imported types are explicitly imported, disallow recursive imports
 2023-10-01 Input - Update keyboard code translation table to support cursor left, right, up and down keys (on macOS)
 2023-10-01 ORP - Ensure that a type alias of a type declared in the same module can only be exported if the original type is also exported
+2023-10-01 ORB - Rearrange type form values (TProc now comes after Proc), this makes the condition >= ORB.Array in ORP.FPSection correct again
