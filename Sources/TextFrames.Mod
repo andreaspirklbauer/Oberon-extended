@@ -1,4 +1,4 @@
-MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 30.12.20 Extended Oberon*)
+MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.23 Extended Oberon*)
   IMPORT Input, Display, Viewers, Fonts, Texts, Oberon;
 
   CONST replace* = Texts.replace; insert* = Texts.insert; delete* = Texts.delete; unmark* = Texts.unmark;  (*message ids*)
@@ -830,8 +830,13 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 30.12.20 Extended Oberon*)
   PROCEDURE Write* (F: Frame; ch: CHAR; fnt: Fonts.Font; col, voff: INTEGER);
     VAR buf: Texts.Buffer;
   BEGIN (*F.hasCar*)
-    IF ch = BS THEN  (*backspace*)
+    IF ch = BS THEN  (*delete character to the left of the cursor*)
       IF F.carloc.pos > F.org THEN
+        Texts.Delete(F.text, F.carloc.pos - 1, F.carloc.pos, DelBuf); SetCaret(F, F.carloc.pos - 1)
+      END
+    ELSIF ch = DEL THEN  (*delete character to the right of the cursor*)
+      IF F.carloc.pos > F.org THEN
+        IF F.carloc.pos < F.text.len THEN RemoveCaret(F); SetCaret(F, F.carloc.pos + 1) END ;
         Texts.Delete(F.text, F.carloc.pos - 1, F.carloc.pos, DelBuf); SetCaret(F, F.carloc.pos - 1)
       END
     ELSIF ch = CtrlA THEN  (*select all*)
@@ -858,7 +863,7 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 30.12.20 Extended Oberon*)
       RemoveCaret(F); SetCaret(F, Pos(F, F.X + F.carloc.x, F.Y + F.carloc.y + F.lsp))
     ELSIF ch = CursorDown THEN
       RemoveCaret(F); SetCaret(F, Pos(F, F.X + F.carloc.x, F.Y + F.carloc.y - F.lsp))
-    ELSIF (" " <= ch) & (ch <= DEL) OR (ch = CR) OR (ch = TAB) THEN
+    ELSIF (" " <= ch) & (ch <(*=*) DEL) OR (ch = CR) OR (ch = TAB) THEN
       KW.fnt := fnt; KW.col := col; KW.voff := voff; Texts.Write(KW, ch);
       Texts.Insert(F.text, F.carloc.pos, KW.buf);
       SetCaret(F, F.carloc.pos + 1)
