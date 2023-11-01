@@ -150,7 +150,6 @@ MODULE B8;                                  (*no error mesage*)
 BEGIN (*a := b*)                            (*this, however, WOULD be an illegal assignment, because M1.T0 is in fact M0.T0 here*)
 END B8.
 
-
 --------------------------- Test suite C ------------------------------------
 
 ORP.Compile @/s ~
@@ -178,6 +177,38 @@ MODULE C4;                                  (*no error message*)
   VAR a: M4.T3; b: M5.T4;
 BEGIN a := b
 END C4.
+
+---------------------------------------------------------------
+
+MODULE C5;
+  TYPE T5* = RECORD END ;
+END C5.
+
+MODULE C6;
+  IMPORT C5;                                (*this imports C5.T5*)
+  TYPE T6* = RECORD END ;
+    T5Alias1* = C5.T5;                      (*this re-exports C5.T5 to clients of C6*)
+  VAR r2*: C5.T5;                           (*this also re-exports C5.T5 to clients of C6*)
+END C6.
+
+MODULE C7;
+  IMPORT C6;                                (*this re-imports C5.T5, even though C7 does not explicitly import C5*)
+  TYPE T5Alias2* = C6.T5Alias1;             (*this re-exports the original type C5.T5*)
+  VAR r3*: C6.T5Alias1;                     (*this also re-exports the original type C5.T5*)
+    r4*: T5Alias2;                          (*this also re-exports the original type C5.T5*)
+END C7.
+
+MODULE C8;
+  IMPORT C7;                                (*this re-imports C5.T5, even though C8 does not explicitly import C5*)
+  VAR r4*: C7.T5Alias2;                     (*this re-exports the original type C5.T5*)
+END C8.
+
+ORP.Compile @/s ~
+
+ORTool.DecSym C5.smb ~                      # shows C5.T5
+ORTool.DecSym C6.smb ~                      # shows C5.T5
+ORTool.DecSym C7.smb ~                      # shows C5.T5
+ORTool.DecSym C8.smb ~                      # shows C5.T5
 
 --------------------------- Test suite D (should produce error messages) ------------------------------------
 
@@ -251,3 +282,18 @@ MODULE E5;                      (*mult def*)
   IMPORT M2, M1 := M0, M1;      (*M2 re-imports M1, no conflict with alias name M1, but conflict with explicit import M1*)
   VAR a: M1.T0; b: M2.T1;       (*Note:the direct import of M1 converts a previous re-import of M1 into an explicit one*)
 END E5.                         (*This must be detected: after the conversion, M1 is an explicit import, THEN conflict with M1*)
+
+--------------------------- Test suite F (should produce error messages) ------------------------------------
+
+ORP.Compile @/s ~
+
+MODULE F1;
+  TYPE T = RECORD i, j*: INTEGER END ;      (*invalid field export of field j*)
+    V* = T;                                 (*type T not exported*)
+    R* = RECORD a*, b*: T END ;             (*type T not exported*)
+  VAR c, d: T;
+    e*, f: T;                               (*type T not exported*)
+    g*, h*: RECORD i, j*, k*: INTEGER END ;  
+    m, n*: RECORD i, j*, k*: INTEGER END ;  (*invalid field export*)
+END F1.
+
