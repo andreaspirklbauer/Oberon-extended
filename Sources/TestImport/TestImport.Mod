@@ -297,3 +297,70 @@ MODULE F1;
     m, n*: RECORD i, j*, k*: INTEGER END ;  (*invalid field export*)
 END F1.
 
+MODULE F2;
+  TYPE T1 = RECORD i*, j: INTEGER END ;     (*invalid field export of field i*)
+    T2* = RECORD i*, j: T1 END ;            (*type T1 not exported*)
+    T3* = RECORD i*, j: CHAR END;
+    T4* = RECORD i: CHAR;
+            j*: RECORD
+                 s*: RECORD u*: T1 END ;    (*type T1 not exported*)
+               END ;
+            k: RECORD
+                 m*: INTEGER;               (*invalid field export of field m, because k is not exported*)
+                 n: RECORD p*: T1 END ;     (*invalid field export of field p because k and n are nor exported, type T1 not exported*)
+               END ;
+            q*: RECORD
+                 r*, s: INTEGER;
+                 t*: RECORD u*: T1 END ;    (*type T1 not exported*)
+               END ;
+             END ;
+    P1* = POINTER TO T1;                    (*type T1 not exported*)
+  VAR a*: T1;                               (*type T1 not exported*)
+    b*, c*: RECORD i*, j: T1 END ;          (*type T1 not exported*)
+END F2.
+
+MODULE F3;
+  TYPE T1 = RECORD i*, j: INTEGER END ;     (*invalid field export of field i*)
+    T2* = ARRAY 2 OF ARRAY 4 OF
+            RECORD i*, j: T1 END ;          (*type T1 not exported*)
+    P1* = POINTER TO T1;                    (*type T1 not exported*)
+    P2* = POINTER TO T2;
+    P3 = POINTER TO T2;
+    T3* = RECORD p1: T1;
+            q*: RECORD r*: P1 END ;
+            s*: RECORD t*: P3 END ;         (*type P3 not exported*)
+          END ;
+END F3.
+
+MODULE F4;
+  TYPE R = RECORD i: INTEGER END ;
+    A* = ARRAY 10 OF R;                      (*type R not exported*)
+  VAR a*, b: ARRAY 10 OF R;                  (*type R not exported*)
+END F4.
+
+MODULE F5;
+  TYPE T = RECORD k: INTEGER END ;
+  VAR a*: RECORD
+            b: RECORD
+                 c*: RECORD x: T END ;       (*invalid field exxport*)
+                 d: RECORD y*: T END ;       (*invalid field export*)
+                 e: ARRAY 10 OF T;
+               END ;
+            m*: RECORD
+                 p: RECORD y*: T END ;       (*invalid field export*)
+                 q*: ARRAY 10 OF T;          (*type T must be exported*)
+               END ;
+          END ;
+END F5.
+
+---------- Note: The following is allowed ----------
+  
+MODULE F6;
+  TYPE P* = POINTER TO R;
+    R = RECORD i: INTEGER END ;             (*this is allowed*)
+  VAR a, b*: POINTER TO R;                  (*this is allowed*)
+END F6.
+
+ORP.Compile @/s ~
+F4.Go ~
+System.Free F4 ~

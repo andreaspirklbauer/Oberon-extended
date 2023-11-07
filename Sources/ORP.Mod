@@ -18,7 +18,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     level, exno, version: INTEGER;
     newSF: BOOLEAN;  (*option flag*)
     expression: PROCEDURE (VAR x: ORG.Item);  (*to avoid forward reference*)
-    Type: PROCEDURE (VAR type: ORB.Type; expok: BOOLEAN);
+    Type: PROCEDURE (VAR type: ORB.Type; expo, expoall: BOOLEAN);
     FormalType: PROCEDURE (VAR typ: ORB.Type; dim: INTEGER);
     modid: ORS.Ident;
     pbsList: PtrBase;   (*list of names of pointer base types*)
@@ -727,19 +727,21 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     END
   END IdentList;
 
-  PROCEDURE ArrayType(VAR type: ORB.Type; expok: BOOLEAN);
+  PROCEDURE ArrayType(VAR type: ORB.Type; expo, expoall: BOOLEAN);
     VAR x: ORG.Item; typ: ORB.Type; len: LONGINT;
   BEGIN NEW(typ); typ.form := ORB.NoTyp;
     IF sym = ORS.of THEN (*open array type*)
-      ORS.Get(sym); Type(typ.base, expok); typ.len := -1; typ.size := 0;
+      ORS.Get(sym); Type(typ.base, expo, expoall); typ.len := -1; typ.size := 0;
+      IF expo THEN CheckExported(typ.base) END ;
       IF typ.base.form = ORB.Array THEN ORS.Mark("multi-dimensional open arrays not allowed") END
     ELSE expression(x);
       IF (x.mode = ORB.Const) & (x.type.form = ORB.Int) & (x.a >= 0) THEN len := x.a
       ELSE len := 1; ORS.Mark("not a valid length")
       END ;
-      IF sym = ORS.of THEN ORS.Get(sym); Type(typ.base, expok);
+      IF sym = ORS.of THEN ORS.Get(sym); Type(typ.base, expo, expoall);
+        IF expo THEN CheckExported(typ.base) END ;
         IF (typ.base.form = ORB.Array) & (typ.base.len < 0) THEN ORS.Mark("dyn array not allowed") END
-      ELSIF sym = ORS.comma THEN ORS.Get(sym); ArrayType(typ.base, expok)
+      ELSIF sym = ORS.comma THEN ORS.Get(sym); ArrayType(typ.base, expo, expoall)
       ELSE ORS.Mark("missing OF"); typ.base := ORB.intType
       END ;
       typ.size := (len * typ.base.size + 3) DIV 4 * 4; typ.len := len
@@ -747,10 +749,10 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     typ.form := ORB.Array; type := typ
   END ArrayType;
 
-  PROCEDURE RecordType(VAR type: ORB.Type; expok: BOOLEAN);
+  PROCEDURE RecordType(VAR type: ORB.Type; expo, expoall: BOOLEAN);
     VAR obj, obj0, new, bot, base: ORB.Object;
       typ, tp: ORB.Type;
-      offset, off, n: LONGINT; expo, expoall: BOOLEAN;
+      offset, off, n: LONGINT; fldexpo, fldexpoall: BOOLEAN;
   BEGIN NEW(typ); typ.form := ORB.NoTyp; typ.base := NIL; typ.mno := -level; typ.nofpar := 0; typ.len := 0; offset := 0; bot := NIL;
     IF sym = ORS.lparen THEN
       ORS.Get(sym); (*record extension*)
@@ -770,21 +772,21 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       Check(ORS.rparen, "no )")
     END ;
     WHILE sym = ORS.ident DO  (*fields*)
-      n := 0; obj := bot; expo := FALSE; expoall := TRUE;
+      n := 0; obj := bot; fldexpo := FALSE; fldexpoall := TRUE;
       WHILE sym = ORS.ident DO
         obj0 := obj;
         WHILE (obj0 # NIL) & (obj0.name # ORS.id) DO obj0 := obj0.next END ;
         IF obj0 # NIL THEN ORS.Mark("mult def") END ;
         NEW(new); ORS.CopyId(new.name); new.class := ORB.Fld; new.next := obj; obj := new; INC(n);
         ORS.Get(sym); CheckExport(new.expo);
-        IF new.expo THEN expo := TRUE;
-          IF ~expok THEN ORS.Mark("invalid field export") END
-        ELSE expoall := FALSE
+        IF new.expo THEN fldexpo := TRUE;  (*at least one fld exported*)
+          IF ~expoall THEN ORS.Mark("invalid field export") END
+        ELSE fldexpoall := FALSE
         END ;
         IF sym = ORS.comma THEN ORS.Get(sym) ELSIF sym # ORS.colon THEN ORS.Mark("comma expected") END
       END ;
-      Check(ORS.colon, "colon expected"); Type(tp, expok & expoall);
-      IF expo THEN CheckExported(tp) END ;
+      Check(ORS.colon, "colon expected"); Type(tp, expo & fldexpo, expoall & fldexpoall);
+      IF expo & fldexpo THEN CheckExported(tp) END ;
       IF (tp.form = ORB.Array) & (tp.len < 0) THEN ORS.Mark("dyn array not allowed") END ;
       IF tp.size > 1 THEN offset := (offset+3) DIV 4 * 4 END ;
       offset := offset + n * tp.size; off := offset; obj0 := obj;
@@ -862,7 +864,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF lev # 0 THEN ORS.Mark("ptr base must be global") END
   END CheckRecLevel;
 
-  PROCEDURE Type0(VAR type: ORB.Type; expok: BOOLEAN);
+  PROCEDURE Type0(VAR type: ORB.Type; expo, expoall: BOOLEAN);
     VAR dmy: LONGINT; obj: ORB.Object; ptbase: PtrBase;
   BEGIN type := ORB.intType; (*sync*)
     IF (sym # ORS.ident) & (sym < ORS.array) THEN ORS.Mark("not a type");
@@ -874,9 +876,9 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         IF (obj.type # NIL) & (obj.type.form # ORB.NoTyp) THEN type := obj.type END
       ELSE ORS.Mark("not a type or undefined")
       END
-    ELSIF sym = ORS.array THEN ORS.Get(sym); ArrayType(type, expok)
+    ELSIF sym = ORS.array THEN ORS.Get(sym); ArrayType(type, expo, expoall)
     ELSIF sym = ORS.record THEN
-      ORS.Get(sym); RecordType(type, expok); Check(ORS.end, "no END")
+      ORS.Get(sym); RecordType(type, expo, expoall); Check(ORS.end, "no END")
     ELSIF sym = ORS.pointer THEN
       ORS.Get(sym); Check(ORS.to, "no TO");
       NEW(type);  type.form := ORB.Pointer; type.size := ORG.WordSize; type.base := ORB.intType;
@@ -892,7 +894,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           NEW(ptbase); ORS.CopyId(ptbase.name); ptbase.type := type; ptbase.next := pbsList; pbsList := ptbase
         END ;
         ORS.Get(sym)
-      ELSE Type(type.base, expok);
+      ELSE Type(type.base, expo, expoall);
         IF ~(type.base.form IN {ORB.Record, ORB.Array}) OR (type.base.typobj = NIL) THEN
           ORS.Mark("must point to named record or array")
         END ;
@@ -935,7 +937,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       WHILE sym = ORS.ident DO
         ORS.CopyId(id); ORS.Get(sym); CheckExport(expo);
         IF sym = ORS.eql THEN ORS.Get(sym) ELSE ORS.Mark("=?") END ;
-        Type(tp, expo);
+        Type(tp, expo, expo);
         IF expo THEN CheckExported(tp) END ;
         ORB.NewObj(obj, id, ORB.Typ); obj.type := tp; obj.expo := expo; obj.lev := level;
         IF tp.typobj = NIL THEN tp.typobj := obj END ;
@@ -955,10 +957,10 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       WHILE sym = ORS.ident DO
         IdentList(ORB.Var, first); obj := first; expo := FALSE; expoall := TRUE;
         WHILE obj # NIL DO
-          IF obj.expo THEN expo := TRUE ELSE expoall := FALSE END ;
+          IF obj.expo THEN expo := TRUE (*at least one var exported*) ELSE expoall := FALSE END ;
           obj := obj.next
         END ;
-        Type(tp, expoall);
+        Type(tp, expo, expoall);
         IF expo THEN CheckExported(tp) END ;
         IF (tp.form = ORB.Array) & (tp.len < 0) THEN ORS.Mark("open array not allowed") END ;
         obj := first;

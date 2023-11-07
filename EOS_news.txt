@@ -66,3 +66,4 @@
 2023-10-01 TextFrames - Added handling of DEL key to TextFrames.Write to delete character to the RIGHT of the cursor
 2023-10-29 TestImport - Enhanced testsuite to test re-imports across multiple modules without explicit imports (modules C5-C8)
 2023-10-30 ORB, ORP - Disallow the export of invisible named types (types for which a type object exists, but which are not marked for export)
+2023-11-01 ORP - Ensure that an array type or variable can only be exported if the array base type is also exported
