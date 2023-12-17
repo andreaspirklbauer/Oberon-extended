@@ -67,3 +67,4 @@
 2023-10-29 TestImport - Enhanced testsuite to test re-imports across multiple modules without explicit imports (modules C5-C8)
 2023-10-30 ORB, ORP - Disallow the export of invisible named types (types for which a type object exists, but which are not marked for export)
 2023-11-01 ORP - Ensure that an array type or variable can only be exported if the array base type is also exported
+2023-12-17 ORP - Report a 'remove asterisk' error for the formal parameter x when compiling the type declaration TYPE P = PROCEDURE(x*: INTEGER);
