@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 13.7.22 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 29.12.23 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -11,7 +11,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     Reg = 10; RegI = 11; Cond = 12;  (*internal item modes*)
     ZeroD = 4B00H;  (*denormalized zero used for FLOOR/FLT conversions*)
     BCT = 0E7000000H; RTI = 10H; STI = 20H; F2 = -2;  (*instructions*)
-    C4 = 10H; C6 = 40H; C8 = 100H; C10 = 400H; C12 = 1000H; C14 = 4000H; C16 = 10000H; C18 = 40000H;
+    C4 = 10H; C6 = 40H; C8 = 100H; C10 = 400H; C12 = 1000H; C14 = 4000H; C16 = 10000H; C18 = 40000H; C19 = 80000H;
     C20 = 100000H; C22 = 400000H; C24 = 1000000H; C26 = 4000000H; C28 = 10000000H; C30 = 40000000H;
 
   (*frequently used opcodes*)  U = 2000H; V = 1000H;
@@ -96,7 +96,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   PROCEDURE Put2(op, a, b, off: LONGINT);
   BEGIN (*emit load/store instruction*)
-    code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
+    IF ABS(off) < C19 THEN code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
+    ELSE ORS.Mark("offset too large")
+    END
   END Put2;
 
   PROCEDURE Put3(op, cond, off: LONGINT);
