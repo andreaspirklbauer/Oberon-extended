@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 29.12.23 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.1.24 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -74,18 +74,17 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1;
 
   PROCEDURE Put1a(op, a, b, im: LONGINT);
-    VAR r: INTEGER;
+    VAR c: INTEGER;
   BEGIN (*same as Put1, but with range test -C16 <= im < C16*)
     IF (im >= -C16) & (im < C16) THEN Put1(op, a, b, im)
     ELSIF op = Mov THEN
       Put1(Mov+U, a, 0, im DIV C16);
       IF im MOD C16 # 0 THEN Put1(Ior, a, a, im MOD C16) END
-    ELSE r := RH;
-      IF b = RH THEN incR END ;
-      Put1(Mov+U, RH, 0, im DIV C16);
-      IF im MOD C16 # 0 THEN Put1(Ior, RH, RH, im MOD C16) END ;
-      Put0(op, a, b, RH);
-      IF RH > r THEN DEC(RH) END
+    ELSE
+      IF (a = RH) OR (a = RH+1) THEN c := a+1 ELSIF b = RH THEN c := b+1 ELSE c := RH END ;
+      Put1(Mov+U, c, 0, im DIV C16);
+      IF im MOD C16 # 0 THEN Put1(Ior, c, c, im MOD C16) END ;
+      Put0(op, a, b, c)
     END
   END Put1a;
 
@@ -95,10 +94,13 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1b;
 
   PROCEDURE Put2(op, a, b, off: LONGINT);
+    VAR c: INTEGER;
   BEGIN (*emit load/store instruction*)
-    IF ABS(off) < C19 THEN code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
-    ELSE ORS.Mark("offset too large")
-    END
+    IF ABS(off) >= C19 THEN
+      IF (a = RH) OR (a = RH+1) THEN c := a+1 ELSIF b = RH THEN c := b+1 ELSE c := RH END ;
+      Put1(Mov+U, c, 0, off DIV C16); Put0(Add, c, b, c); b := c; off := off MOD C16
+    END ;
+    code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
   END Put2;
 
   PROCEDURE Put3(op, cond, off: LONGINT);
