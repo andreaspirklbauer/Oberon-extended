@@ -74,17 +74,17 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1;
 
   PROCEDURE Put1a(op, a, b, im: LONGINT);
-    VAR c: INTEGER;
+    VAR r: INTEGER;
   BEGIN (*same as Put1, but with range test -C16 <= im < C16*)
     IF (im >= -C16) & (im < C16) THEN Put1(op, a, b, im)
     ELSIF op = Mov THEN
       Put1(Mov+U, a, 0, im DIV C16);
       IF im MOD C16 # 0 THEN Put1(Ior, a, a, im MOD C16) END
-    ELSE
-      IF (a = RH) OR (a = RH+1) THEN c := a+1 ELSIF b = RH THEN c := b+1 ELSE c := RH END ;
-      Put1(Mov+U, c, 0, im DIV C16);
-      IF im MOD C16 # 0 THEN Put1(Ior, c, c, im MOD C16) END ;
-      Put0(op, a, b, c)
+    ELSE r := RH;
+      IF (a = RH) OR (b = RH) THEN incR END ;
+      Put1(Mov+U, RH, 0, im DIV C16);
+      IF im MOD C16 # 0 THEN Put1(Ior, RH, RH, im MOD C16) END ;
+      Put0(op, a, b, RH); RH := r
     END
   END Put1a;
 
@@ -94,11 +94,11 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1b;
 
   PROCEDURE Put2(op, a, b, off: LONGINT);
-    VAR c: INTEGER;
+    VAR r: INTEGER;
   BEGIN (*emit load/store instruction*)
-    IF ABS(off) >= C19 THEN
-      IF (a = RH) OR (a = RH+1) THEN c := a+1 ELSIF b = RH THEN c := b+1 ELSE c := RH END ;
-      Put1(Mov+U, c, 0, off DIV C16); Put0(Add, c, b, c); b := c; off := off MOD C16
+    IF ABS(off) >= C19 THEN r := RH;
+      IF (a = RH) OR (b = RH) THEN incR END ;
+      Put1(Mov+U, RH, 0, off DIV C16); Put0(Add, RH, RH, b); b := RH; off := off MOD C16; RH := r
     END ;
     code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
   END Put2;
@@ -659,11 +659,11 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN
     IF x.type.form = ORB.String THEN loadStringAdr(x) ELSE loadAdr(x) END ;
     IF y.type.form = ORB.String THEN loadStringAdr(y) ELSE loadAdr(y) END ;
-    Put2(Ldr+1, RH, x.r, 0); Put1(Add, x.r, x.r, 1);
-    Put2(Ldr+1, RH+1, y.r, 0); Put1(Add, y.r, y.r, 1);
-    Put0(Cmp, RH+2, RH, RH+1); Put3(BC, NE, 2);
-    Put1(Cmp, RH+2, RH, 0); Put3(BC, NE, -8);
-    DEC(RH, 2); SetCC(x, relmap[op - ORS.eql])
+    Put2(Ldr+1, RH, x.r, 0); Put1(Add, x.r, x.r, 1); incR;
+    Put2(Ldr+1, RH, y.r, 0); Put1(Add, y.r, y.r, 1); incR;
+    Put0(Cmp, RH, RH-2, RH-1); Put3(BC, NE, 2);
+    Put1(Cmp, RH, RH-2, 0); Put3(BC, NE, -8);
+    DEC(RH, 4); SetCC(x, relmap[op - ORS.eql])
   END StringRelation;
 
   (* Code generation of Assignments *)
@@ -700,17 +700,18 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         IF s = 1 THEN Put1(Add, RH, RH, 3); Put1(Asr, RH, RH, 2)
         ELSIF s # 4 THEN Put1a(Mul, RH, RH, s DIV 4)
         END ;
-        IF check THEN (*check array lengths*)
-          Put1a(Mov, RH+1, 0, (x.type.size+3) DIV 4); Put0(Cmp, RH+1, RH, RH+1); Trap(GT, 3)
+        IF check THEN (*check array lengths*) incR;
+          Put1a(Mov, RH, 0, (x.type.size+3) DIV 4); Put0(Cmp, RH, RH-1, RH); Trap(GT, 3); DEC(RH)
         END ;
         fix3(pc0, pc + 5 - pc0)
       END
     ELSIF x.type.form = ORB.Record THEN Put1a(Mov, RH, 0, x.type.size DIV 4)
     ELSE ORS.Mark("inadmissible assignment")
     END ;
-    Put2(Ldr, RH+1, y.r, 0); Put1(Add, y.r, y.r, 4);
-    Put2(Str, RH+1, x.r, 0); Put1(Add, x.r, x.r, 4);
-    Put1(Sub, RH, RH, 1); Put3(BC, NE, -6); RH := 0
+    incR;
+    Put2(Ldr, RH, y.r, 0); Put1(Add, y.r, y.r, 4);
+    Put2(Str, RH, x.r, 0); Put1(Add, x.r, x.r, 4);
+    Put1(Sub, RH-1, RH-1, 1); Put3(BC, NE, -6); RH := 0
   END StoreStruct;
 
   PROCEDURE CopyString*(VAR x, y: Item);  (* x := y, frame = 0 *) 
