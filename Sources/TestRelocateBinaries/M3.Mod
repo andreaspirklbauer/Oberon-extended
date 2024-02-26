@@ -1,5 +1,5 @@
-MODULE M3;  (*no asterisk after the keyword MODULE / AP 1.5.21 Extended Oberon*)
-  IMPORT SYSTEM, M0, M1, M2;  (*import constants only for RunRsc*)
+MODULE M3;  (*no asterisk after the keyword MODULE / AP 1.3.24 Extended Oberon*)
+  IMPORT SYSTEM, M0, M1, M2;  (*import constants only*)
   TYPE Ptr3* = POINTER TO Rec3;
     Rec3* = RECORD (M2.Rec2) x: INTEGER END ;
 
@@ -21,14 +21,14 @@ MODULE M3;  (*no asterisk after the keyword MODULE / AP 1.5.21 Extended Oberon*)
 BEGIN Do
 END M3.
 
-ORP.Compile Run.Mod/s M0.Mod/s M1.Mod/s M2.Mod/s M3.Mod/s ~
+ORP.Compile M0.Mod/s M1.Mod/s M2.Mod/s M3.Mod/s ~
 ORL.Link M3 ~                      # default destadr = 0
 ORL.Relocate M3.bin M4.bin 1024 ~  # relocate the prelinked binary to destadr = 1024
 
-Run.RunRsc M1.rsc ~   # see the source file M1.Mod
-Tools.Inspect 0 ~     # yields this output:  .... .... 0000000A .... ....
+ORL.Execute M1.rsc ~    # see the source file M1.Mod
+Tools.Inspect 0 ~       # displays:  .... .... 0000000A .... ....
 
-ORL.Execute M3.bin ~  # will automatically relocate the binary from destadr 0 to its actual memory location
-ORL.Execute M4.bin ~  # will automatically relocate the binary from destadr 1024 to its actual memory location
-Tools.Inspect 0 ~     # yields this output:  ... ... ... ... 0000000C 0000000D 0000000E ...
+ORL.Run M3.bin ~        # automatically relocates the binary from destadr 0 to its actual memory location
+ORL.Run M4.bin ~        # automatically relocates the binary from destadr 1024 to its actual memory location
+Tools.Inspect 0 ~       # displays:  ... ... ... ... 0000000C 0000000D 0000000E ...
 

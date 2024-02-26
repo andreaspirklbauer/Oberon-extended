@@ -1,4 +1,4 @@
-MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
+MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.3.24 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, Files, Modules, Texts, Oberon;
   CONST versionkey = 1X; versionkey0 = 0X; DescSize = 96; MnLength = 32; BootSec = 2; BootSize = 192; FPrint = 12345678H;
     noerr* = 0; nofile* = 1; badversion* = 2; badkey* = 3; badfile* = 4; nospace* = 5;
@@ -26,6 +26,15 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
     importing*, imported*: ModuleName;
     W: Texts.Writer;
 
+  PROCEDURE GetArg(VAR S: Texts.Scanner);
+    VAR T: Texts.Text; beg, end, time: LONGINT;
+  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S);
+    IF (S.class = Texts.Char) & (S.c = "^") THEN
+      Oberon.GetSelection(T, beg, end, time);
+      IF time >= 0 THEN Texts.OpenScanner(S, T, beg); Texts.Scan(S) END
+    END
+  END GetArg;
+
   PROCEDURE EndLine;
   BEGIN Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
   END EndLine;
@@ -37,12 +46,6 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
     REPEAT FName[i]:= ext[j]; INC(i); INC(j) UNTIL ext[j] = 0X;
     FName[i] := 0X
   END MakeFileName;
-
-  PROCEDURE ThisFile(name: ARRAY OF CHAR): Files.File;
-    VAR F: Files.File;
-      filename: ModuleName;
-  BEGIN MakeFileName(filename, name, ".rsc"); F := Files.Old(filename); RETURN F
-  END ThisFile;
 
   PROCEDURE error(n: INTEGER; name: ARRAY OF CHAR);
   BEGIN res := n; importing := name
@@ -81,7 +84,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
     WHILE (mod # NIL) & (name # mod.name) DO mod := mod.next END ;
     IF mod = NIL THEN (*link*)
       check(name, n);
-      IF res = noerr THEN F := ThisFile(name) ELSE F := NIL END ;
+      IF res = noerr THEN MakeFileName(name1, name, ".rsc"); F := Files.Old(name1) ELSE F := NIL END ;
       IF F # NIL THEN
         Files.Set(R, F, 0); Files.ReadString(R, name1); Files.ReadInt(R, key); Files.Read(R, ch);
         Files.ReadInt(R, size); importing := name1;
@@ -230,7 +233,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
       S: Texts.Scanner;
       M, p: Module;
       name: ModuleName;
-  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S); res := -1;
+  BEGIN GetArg(S); res := -1;
     IF S.class = Texts.Name THEN
       root := NIL; Start := Modules.AllocPtr; AllocPtr :=  Start + ModAdr; i := Start;
       WHILE i < AllocPtr DO SYSTEM.PUT(i, 0); INC(i, 4) END ;
@@ -283,7 +286,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
       F: Files.File; R: Files.Rider;
       S: Texts.Scanner;
       buf: ARRAY Disk.SectorLength OF BYTE;
-  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S); res := -1;
+  BEGIN GetArg(S); res := -1;
     IF S.class = Texts.Name THEN
       Texts.WriteString(W, "  loading "); Texts.WriteString(W, S.s); F := Files.Old(S.s);
       IF F # NIL THEN Texts.WriteString(W, " onto boot area"); Texts.WriteInt(W, Files.Length(F), 7);
@@ -363,20 +366,21 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
       name, name1: ARRAY 32 OF CHAR;
       F: Files.File; R: Files.Rider;
       S: Texts.Scanner;
-  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S); res := -1;
+  BEGIN GetArg(S); res := -1;
     IF S.class = Texts.Name THEN name := S.s; Texts.Scan(S);
       IF S.class = Texts.Name THEN name1 := S.s; Texts.Scan(S);
         IF S.class = Texts.Int THEN destadr := S.i; res := -2;
-          Texts.WriteString(W, "  relocating "); Texts.WriteString(W, name); Texts.WriteString(W, " => ");
-          Texts.WriteString(W, name1); Texts.WriteString(W, " at address "); Texts.WriteInt(W, destadr, 7);
+          Texts.WriteString(W, "  relocating "); Texts.WriteString(W, name); Texts.WriteString(W, " to ");
+          Texts.WriteString(W, name1);
           IF destadr >= 0 THEN F := Files.Old(name);
             IF F # NIL THEN filelen := Files.Length(F);
-              IF filelen > ModAdr THEN
-                IF Modules.AllocPtr + filelen < limit THEN
-                  Files.Set(R, F, 0); Files.ReadByte(R, b); start := Modules.AllocPtr; i := start;
+              IF filelen > ModAdr THEN start := Modules.AllocPtr;
+                IF start + filelen < limit THEN
+                  Files.Set(R, F, 0); Files.ReadByte(R, b); i := start;
                   WHILE ~R.eof DO SYSTEM.PUT(i, b); INC(i); Files.ReadByte(R, b) END ;
                   SYSTEM.GET(start + FPrintAdr, fprint);  (*fingerprint*)
                   IF fprint = FPrint THEN res := noerr;
+                    Texts.WriteString(W, " at address "); Texts.WriteHex(W, destadr);
                     RelocateLoaded(start, destadr);
                     F := Files.New(name1); Files.Set(R, F, 0); i := start;
                     WHILE i < start + filelen DO SYSTEM.GET(i, b); Files.WriteByte(R, b); INC(i) END ;
@@ -398,24 +402,24 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
     EndLine
   END Relocate;
 
-  PROCEDURE Execute*;  (*load and execute prelinked binary M.bin*)
+  PROCEDURE Run*;  (*load and execute prelinked binary M.bin*)
     VAR i, start, filelen, fprint: INTEGER; b: BYTE;
       body: Modules.Command;
       F: Files.File; R: Files.Rider;
       S: Texts.Scanner;
-  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S); res := -1;
+  BEGIN GetArg(S); res := -1;
     IF S.class = Texts.Name THEN
       Texts.WriteString(W, "  executing "); Texts.WriteString(W, S.s);
       F := Files.Old(S.s);
       IF F # NIL THEN filelen := Files.Length(F);
-        IF filelen > ModAdr THEN
-          IF Modules.AllocPtr + filelen < limit THEN
-            Files.Set(R, F, 0); Files.ReadByte(R, b); start := Modules.AllocPtr; i := start;
+        IF filelen > ModAdr THEN start := Modules.AllocPtr;
+          IF start + filelen < limit THEN
+            Files.Set(R, F, 0); Files.ReadByte(R, b); i := start;
             WHILE ~R.eof DO SYSTEM.PUT(i, b); INC(i); Files.ReadByte(R, b) END ;
             SYSTEM.GET(start + FPrintAdr, fprint);  (*fingerprint*)
             IF fprint = FPrint THEN res := noerr;
-              RelocateLoaded(start, start); Texts.WriteString(W, " at address ");
-              Texts.WriteInt(W, start, 7); Texts.WriteInt(W, i - start, 7);
+              Texts.WriteString(W, " at address "); Texts.WriteHex(W, start);
+              RelocateLoaded(start, start);
               body := SYSTEM.VAL(Command, start); body  (*branch to initialization body of top module*)
             ELSE Texts.WriteString(W, "  input file format error")
             END
@@ -425,11 +429,65 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.23 Extended Oberon*)
         END
       ELSE Texts.WriteString(W, " not found")
       END
-    ELSE Texts.WriteString(W, "Usage: ORL.Execute M.bin")
+    ELSE Texts.WriteString(W, "Usage: ORL.Run M.bin")
+    END ;
+    EndLine
+  END Run;
+
+  PROCEDURE ExtractCode(F: Files.File; start: INTEGER; VAR codelen, entry, res: INTEGER);
+    VAR n, p, data: INTEGER; ch: CHAR; b: BYTE;            (*codelen in words, entry in bytes*)
+      R: Files.Rider;
+      name: ARRAY 32 OF CHAR;
+  BEGIN Files.Set(R, F, 0); Files.ReadString(R, name); Files.ReadInt(R, data); (*key*)
+    Files.ReadByte(R, b); (*version*) Files.ReadInt(R, data); (*size*)
+    Files.ReadString(R, name); (*imports*)
+    WHILE name[0] # 0X DO Files.ReadInt(R, data); (*key*) Files.ReadString(R, name) END ;
+    Files.ReadInt(R, n); (*variable space*)
+    Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n); (*strings*)
+    Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n); (*type descriptors*)
+    Files.ReadInt(R, n); codelen := n;
+    IF start + n < limit THEN p := start;
+      WHILE n > 0 DO Files.ReadInt(R, data); SYSTEM.PUT(p, data); INC(p, 4); DEC(n) END ; (*code*)
+      Files.ReadString(R, name);
+      WHILE name[0] # 0X DO Files.ReadInt(R, data); Files.ReadString(R, name) END ; (*commands*)
+      Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n*4); (*entries*)
+      Files.ReadInt(R, data);
+      WHILE data >= 0 DO Files.ReadInt(R, data) END ; (*pointer references*)
+      Files.ReadInt(R, data);
+      WHILE data >= 0 DO Files.ReadInt(R, data) END ; (*procedure variable references*)
+      Files.ReadInt(R, data); (*fixorgP*) Files.ReadInt(R, data); (*fixorgD*)
+      Files.ReadInt(R, data); (*fixorgT*) Files.ReadInt(R, data); (*fixorgM*)
+      Files.ReadInt(R, entry); (*body*) Files.ReadInt(R, data); (*final*)
+      Files.Read(R, ch);
+      IF ch # "O" THEN res := badfile ELSE res := noerr END
+    ELSE res := nospace
+    END
+  END ExtractCode;
+
+  PROCEDURE Execute*;  (*extract, load and execute code section of standalone program M.rsc*)
+    VAR start, codelen, entry: INTEGER;  (*codelen in words, entry in bytes*)
+      body: Command;
+      F: Files.File;
+      S: Texts.Scanner;
+  BEGIN GetArg(S); res := -1;
+    IF S.class = Texts.Name THEN
+      Texts.WriteString(W, "  executing "); Texts.WriteString(W, S.s);
+      F := Files.Old(S.s);
+      IF F # NIL THEN start := Modules.AllocPtr;
+        ExtractCode(F, start, codelen, entry, res);
+        IF res = noerr THEN
+          Texts.WriteString(W, " at address "); Texts.WriteHex(W, start + entry);
+          body := SYSTEM.VAL(Command, start + entry); body
+        ELSIF res = nospace THEN Texts.WriteString(W, " program too long")
+        ELSIF res = badfile THEN Texts.WriteString(W, " input file format error")
+        END
+      ELSE Texts.WriteString(W, " not found")
+      END
+    ELSE Texts.WriteString(W, "Usage: ORL.Execute M.rsc")
     END ;
     EndLine
   END Execute;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.5.23"); EndLine;
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.3.24"); EndLine;
   limit := Kernel.stackOrg - Kernel.stackSize
 END ORL.
