@@ -435,26 +435,27 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.3.24 Extended Oberon*)
   END Run;
 
   PROCEDURE ExtractCode(F: Files.File; start: INTEGER; VAR codelen, entry, res: INTEGER);
-    VAR n, p, data: INTEGER; ch: CHAR; b: BYTE;            (*codelen in words, entry in bytes*)
+    VAR n, p, data: INTEGER;                           (*codelen in words, entry in bytes*)
+      ch: CHAR; b: BYTE;
       R: Files.Rider;
       name: ARRAY 32 OF CHAR;
   BEGIN Files.Set(R, F, 0); Files.ReadString(R, name); Files.ReadInt(R, data); (*key*)
     Files.ReadByte(R, b); (*version*) Files.ReadInt(R, data); (*size*)
     Files.ReadString(R, name); (*imports*)
-    WHILE name[0] # 0X DO Files.ReadInt(R, data); (*key*) Files.ReadString(R, name) END ;
+    WHILE ~R.eof & (name[0] # 0X) DO Files.ReadInt(R, data); (*key*) Files.ReadString(R, name) END ;
     Files.ReadInt(R, n); (*variable space*)
     Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n); (*strings*)
     Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n); (*type descriptors*)
     Files.ReadInt(R, n); codelen := n;
     IF start + n < limit THEN p := start;
-      WHILE n > 0 DO Files.ReadInt(R, data); SYSTEM.PUT(p, data); INC(p, 4); DEC(n) END ; (*code*)
+      WHILE ~R.eof & (n > 0) DO Files.ReadInt(R, data); SYSTEM.PUT(p, data); INC(p, 4); DEC(n) END ; (*program code*)
       Files.ReadString(R, name);
-      WHILE name[0] # 0X DO Files.ReadInt(R, data); Files.ReadString(R, name) END ; (*commands*)
+      WHILE ~R.eof & (name[0] # 0X) DO Files.ReadInt(R, data); Files.ReadString(R, name) END ; (*commands*)
       Files.ReadInt(R, n); Files.Set(R, F, Files.Pos(R) + n*4); (*entries*)
       Files.ReadInt(R, data);
-      WHILE data >= 0 DO Files.ReadInt(R, data) END ; (*pointer references*)
+      WHILE ~R.eof & (data >= 0) DO Files.ReadInt(R, data) END ; (*pointer references*)
       Files.ReadInt(R, data);
-      WHILE data >= 0 DO Files.ReadInt(R, data) END ; (*procedure variable references*)
+      WHILE ~R.eof & (data >= 0) DO Files.ReadInt(R, data) END ; (*procedure variable references*)
       Files.ReadInt(R, data); (*fixorgP*) Files.ReadInt(R, data); (*fixorgD*)
       Files.ReadInt(R, data); (*fixorgT*) Files.ReadInt(R, data); (*fixorgM*)
       Files.ReadInt(R, entry); (*body*) Files.ReadInt(R, data); (*final*)

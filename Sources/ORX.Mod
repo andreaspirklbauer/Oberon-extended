@@ -1,4 +1,4 @@
-MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
+MODULE ORX;  (*Oberon boot converter for RISC / AP 1.3.24 Extended Oberon*)
   IMPORT Files, Texts, Oberon;
   CONST CR = 0DX; noerr = 0; badfile = 4;  (*copied from Modules for use as cross development tool*)
 
@@ -23,8 +23,9 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
     Files.Write(R, CR)
   END WriteHex;
 
-  PROCEDURE OutCode(VAR R, R1: Files.Rider; write: Writer; VAR codelen, entry, res: INTEGER);
-    VAR n, data: INTEGER; ch: CHAR; b: BYTE;               (*codelen in words, entry in bytes*)
+  PROCEDURE ExtractCode(VAR R, R1: Files.Rider; write: Writer; VAR codelen, entry, res: INTEGER);
+    VAR n, data: INTEGER;                                      (*codelen in words, entry in bytes*)
+      ch: CHAR; b: BYTE;
       F: Files.File;
       name: ARRAY 32 OF CHAR;
   BEGIN F := Files.Base(R); Files.ReadString(R, name); Files.ReadInt(R, data); (*key*)
@@ -48,7 +49,7 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
     Files.ReadInt(R, entry); (*body*) Files.ReadInt(R, data); (*final*)
     Files.Read(R, ch);
     IF ch # "O" THEN res := badfile ELSE res := noerr END
-  END OutCode;
+  END ExtractCode;
 
   PROCEDURE WriteFile*;  (*write code section of M.rsc in hex format to output file*)
     VAR f, g: Files.File; Rf, Rg: Files.Rider;
@@ -63,7 +64,7 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
         IF f # NIL THEN
           IF Files.Length(f) > 0 THEN
             g := Files.New(S.s); Files.Set(Rf, f, 0); Files.Set(Rg, g, 0);
-            OutCode(Rf, Rg, WriteHex, codelen, entry, res);
+            ExtractCode(Rf, Rg, WriteHex, codelen, entry, res);
             IF res = noerr THEN
               filelen := ((codelen DIV 512) + 1) * 512; n := codelen;
               WHILE n < filelen DO WriteHex(Rg, 0); INC(n) END ; (*zero-fill*)
@@ -94,7 +95,7 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
         IF f # NIL THEN
           IF Files.Length(f) > 0 THEN
             g := Files.New(S.s); Files.Set(Rf, f, 0); Files.Set(Rg, g, 0);
-            OutCode(Rf, Rg, Files.WriteInt, codelen, entry, res);
+            ExtractCode(Rf, Rg, Files.WriteInt, codelen, entry, res);
             IF res = noerr THEN
               Texts.WriteInt(W, codelen*4, 6); Texts.WriteInt(W, entry, 6);
               Texts.WriteString(W, "  done"); Files.Register(g)
@@ -156,5 +157,5 @@ MODULE ORX;  (*Oberon boot converter for RISC / AP 1.11.21 Extended Oberon*)
     EndLine; Oberon.Return(res)
   END WriteStream;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR boot converter  AP 1.11.21"); EndLine
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR boot converter  AP 1.3.24"); EndLine
 END ORX.
