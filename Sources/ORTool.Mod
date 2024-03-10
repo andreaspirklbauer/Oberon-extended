@@ -1,6 +1,7 @@
-MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 7.8.22 Extended Oberon*)
+MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 10.3.24 Extended Oberon*)
   IMPORT SYSTEM, Files, Modules, Texts, Oberon, ORB;
   CONST TAB = 09X;  (*copied from Input for use as cross development tool*)
+    AllocAdr = 16; FPrintAdr = 28; ModAdr = 32; FPrint = 12345678H; (*copied from ORL*)
   VAR W: Texts.Writer;
     mnemo0, mnemo1: ARRAY 16, 4 OF CHAR;  (*mnemonics*)
     typlev: INTEGER;
@@ -293,7 +294,40 @@ MODULE ORTool;  (*NW 18.2.2013 / 12.4.2017 / AP 7.8.22 Extended Oberon*)
      END
   END DecMod;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "ORTool 18.2.2013 / AP 1.8.22");
+  PROCEDURE DecBin*;  (*decode pre-linked binary file*)
+    VAR AllocPtr, fprint, pos, num, size, prg, refcnt: INTEGER;
+      name: ARRAY 32 OF CHAR;
+      F: Files.File; R: Files.Rider;
+      S: Texts.Scanner;
+  BEGIN Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos); Texts.Scan(S);
+    IF S.class = Texts.Name THEN
+      Texts.WriteString(W, "decode "); Texts.WriteString(W, S.s); F := Files.Old(S.s);
+      IF F # NIL THEN
+        Files.Set(R, F, FPrintAdr); Files.ReadInt(R, fprint);
+        IF fprint = FPrint THEN
+          Files.Set(R, F, AllocAdr); Files.ReadInt(R, AllocPtr); Texts.WriteInt(W, AllocPtr, 7); Texts.WriteLn(W);
+          Files.Set(R, F, ModAdr); pos := ModAdr;
+          WHILE ~R.eof & (pos < AllocPtr) DO
+            Files.ReadString(R, name);
+            Files.Set(R, F, pos+40); (*num*) Files.ReadInt(R, num);
+            Files.ReadInt(R, size); (*size*) Files.ReadInt(R, refcnt); (*refcnt*)
+            Files.Set(R, F, pos+64); (*prg*) Files.ReadInt(R, prg);
+            IF name[0] # 0X THEN Texts.WriteString(W, "  ");
+              Texts.WriteString(W, name); Texts.WriteInt(W, num, 4); Texts.Write(W, TAB);
+              Texts.WriteHex(W, pos); Texts.WriteHex(W, prg); Texts.WriteInt(W, refcnt, 4)
+            ELSE Texts.WriteString(W, "---")
+            END ;
+            Texts.WriteLn(W); INC(pos, size); Files.Set(R, F, pos)
+          END
+        ELSE Texts.WriteString(W, "  input file format error"); Texts.WriteLn(W)
+        END
+      ELSE Texts.WriteString(W, " not found"); Texts.WriteLn(W)
+      END ;
+      Texts.Append(Oberon.Log, W.buf)
+    END
+  END DecBin;
+
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "ORTool 18.2.2013 / AP 10.3.24");
   Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
   mnemo0[0] := "MOV";
   mnemo0[1] := "LSL";
