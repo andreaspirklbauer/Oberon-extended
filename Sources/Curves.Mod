@@ -14,7 +14,7 @@ MODULE Curves;  (*NW 8.11.90 / 18.4.2013*)
 
   PROCEDURE Dot(f: GraphicFrames.Frame; col, x, y: INTEGER);
   BEGIN
-    IF (x >= f.X) & (x+7 < f.X1) & (y >= f.Y) & (x+7 < f.Y1) THEN Display.Dot(col, x, y, Display.replace) END
+    IF (x >= f.X) & (x+7 < f.X1) & (y >= f.Y) & (y+7 < f.Y1) THEN Display.Dot(col, x, y, Display.replace) END
   END Dot;
 
   PROCEDURE mark(f: GraphicFrames.Frame; col, x, y: INTEGER);
