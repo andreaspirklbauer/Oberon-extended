@@ -1,4 +1,4 @@
-MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 1.10.21 Extended Oberon*)
+MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 4.4.24 Extended Oberon*)
   IMPORT SYSTEM, Texts, Oberon;
 
 (* Oberon Scanner does lexical analysis. Input is Oberon-Text, output is
@@ -31,6 +31,7 @@ MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 1.10.21 Extende
     var* = 65; procedure* = 66; begin* = 67; import* = 68; module* = 69; final* = 70; eot = 71;
 
   TYPE Ident* = ARRAY IdLen OF CHAR;
+    KeyWord = RECORD sym: INTEGER; id: ARRAY 12 OF CHAR END;
 
   VAR ival*, slen*: LONGINT;  (*results of Get*)
     rval*: REAL;
@@ -44,8 +45,7 @@ MODULE ORS; (* NW 19.9.93 / 20.3.2017  Scanner in Oberon-07 / AP 1.10.21 Extende
     W: Texts.Writer;
     k: INTEGER;
     KWX: ARRAY 10 OF INTEGER;
-    keyTab: ARRAY NKW OF
-        RECORD sym: INTEGER; id: ARRAY 12 OF CHAR END;
+    keyTab: ARRAY NKW OF KeyWord;
   
   PROCEDURE CopyId*(VAR ident: Ident);
   BEGIN ident := id

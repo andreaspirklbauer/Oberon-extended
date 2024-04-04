@@ -1,4 +1,4 @@
-MODULE SCC; (*NW 13.11.87 / 22.8.90 Ceres-2; nRF24L01+ version PR 21.7.13 / 23.12.13 / AP 7.2.20*)
+MODULE SCC; (*NW 13.11.87 / 22.8.90 Ceres-2; nRF24L01+ version PR 21.7.13 / 23.12.13 / AP 4.4.24 Extended Oberon*)
   IMPORT SYSTEM, Kernel;
 
   CONST
@@ -13,12 +13,14 @@ MODULE SCC; (*NW 13.11.87 / 22.8.90 Ceres-2; nRF24L01+ version PR 21.7.13 / 23.1
       len*: INTEGER (*of data following header*)
     END ;
 
-  VAR
-    filter*: BOOLEAN; Adr*: BYTE; rcvd: INTEGER;
-    rx: RECORD
+    RcvDesc = RECORD
       hd: Header;
       dat: ARRAY MaxPacket-HdrSize OF BYTE
     END;
+
+  VAR
+    filter*: BOOLEAN; Adr*: BYTE; rcvd: INTEGER;
+    rx: RcvDesc;
 
   PROCEDURE SPICtrl(s: SET);
   BEGIN SYSTEM.PUT(spiCtrl, s);

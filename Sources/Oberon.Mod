@@ -1,4 +1,4 @@
-MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 1.9.22 Extended Oberon*)
+MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 4.4.24 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Files, Modules, Input, Display, Viewers, Fonts, Texts;
 
   CONST (*message ids*)
@@ -48,12 +48,7 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
       handle: Handler
     END ;
 
-  VAR User*: ARRAY 8 OF CHAR; Password*: LONGINT;
-    Arrow*, Star*: Marker; (*predefined markers representing an arrow pointing to the NW and a star symbol*)
-    Mouse, Pointer: Cursor; (*predefined cursors representing a mouse and a global system pointer*)
-    Log*: Texts.Text;
-
-    Par*: RECORD
+    ParDesc* = RECORD
       vwr*: Viewers.Viewer;
       frame*: Display.Frame;
       text*: Texts.Text;
@@ -61,11 +56,19 @@ MODULE Oberon; (*JG 6.9.90 / 23.9.93 / 13.8.94 / NW 14.4.2013 / 22.12.2015 / AP 
       res*: INTEGER
     END ;
 
+  VAR User*: ARRAY 8 OF CHAR; Password*: LONGINT;
+    Arrow*, Star*: Marker; (*predefined markers representing an arrow pointing to the NW and a star symbol*)
+    Mouse, Pointer: Cursor; (*predefined cursors representing a mouse and a global system pointer*)
+
+    Log*: Texts.Text;
+    Par*: ParDesc;
+
     CurFnt*: Fonts.Font;
     CurCol*, CurOff*: INTEGER;
-    NofTasks*: INTEGER;
 
+    NofTasks*: INTEGER;
     CurTask, DeferTask: Task;
+
     DW, DH, CL: INTEGER;
     ActCnt: INTEGER; (*action count for garbage collector*)
     Mod: Modules.Module;
