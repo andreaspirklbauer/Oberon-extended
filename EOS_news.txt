@@ -73,4 +73,4 @@
 2024-01-01 ORG - Enforce the rule that RH is always the next free register (top of register stack)
 2024-03-01 ORL - Allow executing pre-linked binaries and standalone programs
 2024-03-10 ORL - Add procedure ORL.DecBin to inspect a prelinked binary file
-2024-04-04 ORS, Oberon, SCC - Use only named record types in anything but type declarations
+2024-04-04 ORS, Oberon, SCC - Use only named record types in variable declarations

@@ -24,7 +24,27 @@ Documentation: [**Documentation**](Documentation)
 
 ------------------------------------------------------
 
-# Instructions for converting an existing Project Oberon 2013 system to Extended Oberon
+# Instructions for running Extended Oberon
 
-If you run Oberon in an emulator on the desktop (e.g., http://github.com/pdewacht/oberon-risc-emu), you can simply backup your existing S3RISCinstall directory, download the compressed archive [**S3RISCinstall.tar.gz**](Documentation/S3RISCinstall.tar.gz) from this repository (containing Extended Oberon) to your emulator directory, run the command *tar xvzf S3RISCinstall.tar.gz* in that directory and then restart the emulator.
+**To obtain Extended Oberon**:
 
+- Download the compressed archive [**S3RISCinstall.tar.gz**](Documentation/S3RISCinstall.tar.gz) from this repository
+
+**To run Extended Oberon in an emulator** (e.g., http://github.com/pdewacht/oberon-risc-emu):
+
+- Backup your existing *S3RISCinstall* directory
+- Uncompress the downloaded archive in the emulator directory *S3RISCinstall*
+  - On Unix/Linux/Mac, run the command **tar xvzf S3RISCinstall.tar.gz**
+  - On Windows, use on of the available Zip tools such as *WinZip*, *7-Zip*, ...
+- Restart the emulator
+
+**To run Extended Oberon on a FGPA development board**:
+
+- Uncompress the downloaded archive
+  - On Unix/Linux/Mac, run the command **tar xvzf S3RISCinstall.tar.gz**
+  - On Windows, use one of the available Zip tools, such as *WinZip*, *7-Zip*, ...
+- Transfer the file *RISC.img* to an SD-card as a *raw image* (do not simply copy the file)
+  - On Unix/Linux/Mac, run the command **ls -l RISC.img** (to get the file size of *RISC.img*) followed by the command **dd if=RISC.img of=/dev/sdc bs=1014 count=FS** (replace */dev/sdc* with the device name on your system and *FS* with the actual file size)
+  - On Windows, use one of the available SD tools, such as *SD Formatter*, *HxD Hex Editor*, ...
+- Insert the SD-card in the FPGA board/daughterboard and verify everything is connected
+- Cold-start the FPGA board/daughterboard by pressing the appropriate button on the board
