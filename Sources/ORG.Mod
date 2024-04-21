@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.1.24 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.5.24 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -118,7 +118,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN (*emit instruction pair to be fixed up by loader, 0 <= off < C24*)
     IF version = 0 THEN Put1(Mov, RH, 0, VarOrg0)
     ELSIF pc - fixorgD < C12 THEN
-      IF base = 0 THEN high := off DIV C16 MOD C8; off := off MOD C16 ELSE high := 0 END ;
+      IF base >= 0 THEN high := off DIV C16 MOD C8; off := off MOD C16; base := 0
+      ELSE (*imported*) high := 0
+      END ;
       Put1b(RH, -base, high, pc-fixorgD); fixorgD := pc-1
     ELSE ORS.Mark("fixup impossible")
     END ;
@@ -210,13 +212,15 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         IF x.type.form = ORB.Proc THEN
           IF x.r > 0 THEN (*local*) ORS.Mark("not allowed")
           ELSIF x.r = 0 THEN (*global*) Put3(BL, 7, 0); Put1a(Sub, RH, LNK, pc*4 - x.a)
-          ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a + C8, 1) (*mark as progbase-relative*)
+          ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a + C8, 1)  (*mark as progbase-relative*)
           END
         ELSE Put1a(Mov, RH, 0, x.a)
         END ;
         x.r := RH; incR
       ELSIF x.mode = ORB.Var THEN
-        IF x.r > 0 THEN (*local*) Put2(op, RH, SP, x.a + frame) ELSE PutPair(x.r, op, RH, RH, x.a, 2) END ;
+        IF x.r > 0 THEN (*local*) Put2(op, RH, SP, x.a + frame)
+        ELSE PutPair(x.r, op, RH, RH, x.a, 2)
+        END ;
         x.r := RH; incR
       ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame); Put2(op, RH, RH, x.b); x.r := RH; incR
       ELSIF x.mode = RegI THEN Put2(op, x.r, x.r, x.a)
@@ -232,7 +236,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE loadAdr(VAR x: Item);
   BEGIN
     IF x.mode = ORB.Var THEN
-      IF x.r > 0 THEN (*local*) Put1a(Add, RH, SP, x.a + frame) ELSE PutPair(x.r, Add, RH, RH, x.a, 1) END ;
+      IF x.r > 0 THEN (*local*) Put1a(Add, RH, SP, x.a + frame)
+      ELSE PutPair(x.r, Add, RH, RH, x.a, 1)
+      END ;
       x.r := RH; incR
     ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame);
       IF x.b # 0 THEN Put1a(Add, RH, RH, x.b) END ;
@@ -260,16 +266,18 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END loadCond;
 
   PROCEDURE loadTypTagAdr(T: ORB.Type);
-    VAR x: Item;
   BEGIN
-    IF T.mno > 0 THEN (*imported*) x.mode := ORB.Var; x.a := T.len; x.r := -T.mno; loadAdr(x)
-    ELSE PutPair(0, Add, RH, RH, T.len, 1); incR; T.len := pc-1  (*insert into fixorgD chain, fixed up in Close*)
-    END
+    IF T.mno <= 0 THEN PutPair(0, Add, RH, RH, T.len, 1); T.len := pc-1  (*insert into fixorgD chain, fixed up in Close*)
+    ELSE (*imported*) PutPair(-T.mno, Add, RH, RH, T.len, 1)
+    END ;
+    incR
   END loadTypTagAdr;
 
   PROCEDURE loadStringAdr(VAR x: Item);
   BEGIN
-    IF x.r >= 0 THEN PutPair(0, Add, RH, RH, varx+x.a, 1) ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a, 1) END ;
+    IF x.r >= 0 THEN PutPair(0, Add, RH, RH, varx + x.a, 1)
+    ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a, 1)
+    END ;
     x.mode := Reg; x.r := RH; incR
   END loadStringAdr;
 
@@ -308,7 +316,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN x.deref := FALSE;
     IF x.mode = ORB.Var THEN
       IF x.r >= 0 THEN x.a := x.a + y.val
-      ELSE loadAdr(x); x.mode := RegI; x.a := y.val
+      ELSE (*imported*) loadAdr(x); x.mode := RegI; x.a := y.val
       END
     ELSIF x.mode = RegI THEN x.a := x.a + y.val
     ELSIF x.mode = ORB.Par THEN x.b := x.b + y.val
@@ -322,7 +330,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     IF (y.mode = ORB.Const) & (lim >= 0) THEN
       IF y.a >= lim THEN ORS.Mark("bad index") END ;
       IF x.mode = ORB.Var THEN
-        IF x.r < 0 THEN (*imported*) loadAdr(x); x.mode := RegI; x.a := y.a * s ELSE x.a := y.a * s + x.a END
+        IF x.r >= 0 THEN x.a := y.a * s + x.a
+        ELSE (*imported*) loadAdr(x); x.mode := RegI; x.a := y.a * s
+        END
       ELSIF x.mode = RegI THEN x.a := y.a * s + x.a
       ELSIF x.mode = ORB.Par THEN x.b := y.a * s + x.b
       END
@@ -353,7 +363,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE DeRef*(VAR x: Item);
   BEGIN
     IF x.mode = ORB.Var THEN
-      IF x.r > 0 THEN (*local*) Put2(Ldr, RH, SP, x.a + frame) ELSE PutPair(x.r, Ldr, RH, RH, x.a, 2) END ;
+      IF x.r > 0 THEN (*local*) Put2(Ldr, RH, SP, x.a + frame)
+      ELSE PutPair(x.r, Ldr, RH, RH, x.a, 2)
+      END ;
       NilCheck; x.r := RH; incR
     ELSIF x.mode = ORB.Par THEN
       Put2(Ldr, RH, SP, x.a + frame); Put2(Ldr, RH, RH, x.b); NilCheck; x.r := RH; incR
@@ -677,7 +689,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN  load(y);
     IF x.type.size = 1 THEN op := Str+1 ELSE op := Str END ;
     IF x.mode = ORB.Var THEN
-      IF x.r > 0 THEN (*local*) Put2(op, y.r, SP, x.a + frame) ELSE PutPair(x.r, op, y.r, RH, x.a, 2) END
+      IF x.r > 0 THEN (*local*) Put2(op, y.r, SP, x.a + frame)
+      ELSE PutPair(x.r, op, y.r, RH, x.a, 2)
+      END
     ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame); Put2(op, y.r, RH, x.b);
     ELSIF x.mode = RegI THEN Put2(op, y.r, x.r, x.a); DEC(RH);
     ELSE ORS.Mark("bad mode in Store")
@@ -1180,7 +1194,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   PROCEDURE Close*(VAR modid: ORS.Ident; key, nofent: LONGINT);
     VAR obj: ORB.Object;
-      i, comsize, nofimps, nofrefs, size, tdx, base: LONGINT;
+      i, comsize, nofimps, nofrefs, size, tdx, fix: LONGINT;
       name: ORS.Ident;
       F: Files.File; R: Files.Rider;
   BEGIN obj := ORB.topScope.next; nofimps := 0; comsize := 4; nofrefs := 0; tdx := varx + strx;
@@ -1192,9 +1206,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         i := (i+4) DIV 4 * 4; INC(comsize, i+4)
       ELSIF obj.class = ORB.Var THEN INC(nofrefs, NofRefs(ORB.Ptrs + ORB.Procs, obj.type))  (*count ptrs and pvrs*)
       ELSIF (obj.class = ORB.Typ) & (obj.type.form = ORB.Record) & (obj.type.typobj = obj) THEN  (*build type descriptors*)
-        i := obj.type.len;  (*heading of fixup chain of instruction pairs inserted into fixorgD chain in loadTypTagAdr*)
-        BuildTD(obj.type, tdw);  (*obj.type.len now used as type descriptor offset in bytes relative to tdx*)
-        IF i > 0 THEN FixLinkPair(i, tdx + obj.type.len) END  (*fix chain of instruction pairs with type descriptor address*)
+        fix := obj.type.len;  (*heading of fixup chain of instruction pairs inserted into fixorgD chain in loadTypTagAdr*)
+        BuildTD(obj.type, tdw);  (*obj.type.len now used as type descriptor (TD) offset in bytes relative to tdx*)
+        IF fix > 0 THEN FixLinkPair(fix, tdx + obj.type.len) END  (*fix chain of instruction pairs with TD adr*)
       END ;
       obj := obj.next
     END ;
