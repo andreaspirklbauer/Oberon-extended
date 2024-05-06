@@ -75,3 +75,4 @@
 2024-03-10 ORL - Add procedure ORL.DecBin to inspect a prelinked binary file
 2024-04-04 ORS, Oberon, SCC - Use only named record types in variable declarations
 2024-04-21 ORG - More consistent code for handling local, global and imported objects
+2024-05-01 ORL - Improve code to fixup instruction pairs in the program code section

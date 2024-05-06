@@ -1,4 +1,4 @@
-MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.3.24 Extended Oberon*)
+MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.5.24 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, Files, Modules, Texts, Oberon;
   CONST versionkey = 1X; versionkey0 = 0X; DescSize = 96; MnLength = 32; BootSec = 2; BootSize = 192; FPrint = 12345678H;
     noerr* = 0; nofile* = 1; badversion* = 2; badkey* = 3; badfile* = 4; nospace* = 5;
@@ -175,18 +175,18 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.3.24 Extended Oberon*)
           IF mno = 0 THEN (*global*)
             offset := inst DIV C12 MOD C8 * C16;
             SYSTEM.GET(adr+4, inst);
-            INC(offset, mod.var + inst MOD C16)
+            INC(offset, mod.var - Start + inst MOD C16)
           ELSE (*import*)
             SYSTEM.GET(mod.imp + (mno-1)*4, impmod);
             SYSTEM.GET(adr+4, inst); vno := inst MOD C8;
             SYSTEM.GET(impmod.ent + vno*4, offset);
-            IF ODD(inst DIV C8) THEN INC(offset, impmod.prg) ELSE INC(offset, impmod.var) END
+            IF ODD(inst DIV C8) THEN INC(offset, impmod.prg - Start) ELSE INC(offset, impmod.var - Start) END
           END ;
-          SYSTEM.PUT(adr, MOV+U+B + pno*C24 + (offset - Start) DIV C16);  (*mark as fixed up by setting the B bit*)
+          SYSTEM.PUT(adr, MOV+U+B + pno*C24 + offset DIV C16);  (*mark as fixed up by setting the B bit*)
           IF inst DIV C30 = F2 THEN inst := inst DIV C20 * C20
           ELSE inst := IOR + inst DIV C24 MOD C4 * C24 + inst DIV C20 MOD C4 * C20
           END ;
-          SYSTEM.PUT(adr+4, inst + (offset - Start) MOD C16);
+          SYSTEM.PUT(adr+4, inst + offset MOD C16);
           adr := adr - disp*4
         END ;
         (*fixup of type descriptors*)
@@ -489,6 +489,6 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.3.24 Extended Oberon*)
     EndLine
   END Execute;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.3.24"); EndLine;
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Boot linker/loader  AP 1.5.24"); EndLine;
   limit := Kernel.stackOrg - Kernel.stackSize
 END ORL.
