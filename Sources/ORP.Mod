@@ -1,4 +1,4 @@
-MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 1.1.24 Extended Oberon*)
+MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 15.5.24 Extended Oberon*)
   IMPORT Texts, Oberon, ORS, ORB, ORG;
   (*Author: Niklaus Wirth, 2014. Oberon-2 extensions by Andreas Pirklbauer, 2020.
     Parser of Oberon-RISC compiler. Uses Scanner ORS to obtain symbols (tokens),
@@ -1109,7 +1109,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       IF sym = ORS.ident THEN
         ORS.CopyId(modid); ORS.Get(sym);
         Texts.WriteString(W, modid); Texts.Append(Oberon.Log, W.buf)
-      ELSE ORS.Mark("identifier expected")
+      ELSE Texts.Write(W, "?"); Texts.Append(Oberon.Log, W.buf); ORS.Mark("identifier expected")
       END ;
       Check(ORS.semicolon, "no ;"); level := 0; exno := 1; key := 0;
       ORB.Init(modid); ORB.OpenScope;
@@ -1134,12 +1134,12 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       IF ORS.errcnt = 0 THEN
         ORG.Close(modid, key, exno);
         Texts.WriteInt(W, ORG.pc, 6); Texts.WriteInt(W, dc, 6); Texts.WriteHex(W, key)
-      ELSE Texts.WriteLn(W); Texts.WriteString(W, "compilation FAILED")
       END ;
-      Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
       ORB.CloseScope; pbsList := NIL
-    ELSE ORS.Mark("must start with MODULE")
-    END
+    ELSE Texts.Write(W, "?"); Texts.Append(Oberon.Log, W.buf); ORS.Mark("must start with MODULE")
+    END ;
+    IF ORS.errcnt > 0 THEN Texts.WriteLn(W); Texts.WriteString(W, "compilation FAILED") END ;
+    Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
   END Module;
 
   PROCEDURE Option(VAR S: Texts.Scanner);
@@ -1164,26 +1164,26 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         IF time >= 0 THEN
           Texts.OpenScanner(S, T, beg); Texts.Scan(S);
           IF S.class = Texts.Name THEN
-            Texts.WriteString(W, S.s); NEW(T); Texts.Open(T, S.s);
-            IF T.len > 0 THEN ORS.Init(T, 0); Module; res := ORS.errcnt END
+            NEW(T); Texts.Open(T, S.s);
+            IF T.len > 0 THEN ORS.Init(T, 0); Module; res := ORS.errcnt
+            ELSE Texts.WriteString(W, "  "); Texts.WriteString(W, S.s); Texts.WriteString(W, " not found"); Texts.WriteLn(W)
+            END
           END
         END
       END
-    ELSE 
+    ELSE
       WHILE S.class = Texts.Name DO
         NEW(T); Texts.Open(T, S.s);
         IF T.len > 0 THEN Option(S); ORS.Init(T, 0); Module; res := ORS.errcnt
-        ELSE Texts.WriteString(W, S.s); Texts.WriteString(W, " not found");
-          Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf)
+        ELSE Texts.WriteString(W, "  "); Texts.WriteString(W, S.s); Texts.WriteString(W, " not found"); Texts.WriteLn(W)
         END ;
         IF (T.len # 0) & (ORS.errcnt = 0) THEN Texts.Scan(S) ELSE S.class := 0 END
       END
     END ;
-    Oberon.Collect(0); Oberon.Return(res)
+    Texts.Append(Oberon.Log, W.buf); Oberon.Collect(0); Oberon.Return(res)
   END Compile;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 1.1.24");
-  Texts.WriteLn(W); Texts.Append(Oberon.Log, W.buf);
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 15.5.24"); Texts.WriteLn(W);
   NEW(dummy); dummy.class := ORB.Var; dummy.type := ORB.intType;
   expression := expression0; Type := Type0; FormalType := FormalType0
 END ORP.
