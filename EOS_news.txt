@@ -78,4 +78,4 @@
 2024-05-01 ORL - Improve code to fixup instruction pairs in the program code section
 2024-05-15 ORL - Write each module to the boot file immediately after linking, thereby reducing memory consumption
 2024-05-18 ORP - Allow selecting a text in Oberon.Log using ^ during the first call of Compile after loading ORP (omit Texts.Append in init code)
-
+2024-10-01 TextFrames - Better alignment of the mouse pointer with the mark in the scroll bar during scrolling

@@ -1,4 +1,4 @@
-MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.23 Extended Oberon*)
+MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
   IMPORT Input, Display, Viewers, Fonts, Texts, Oberon;
 
   CONST replace* = Texts.replace; insert* = Texts.insert; delete* = Texts.delete; unmark* = Texts.unmark;  (*message ids*)
@@ -104,8 +104,8 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.23 Extended Oberon*)
     ELSE
       IF X < CL + 3 THEN X := CL + 4 ELSIF X > CL + DW - 4 THEN X := CL + DW - 4 END
     END ;
-    IF Y < 7 THEN Y := 7 ELSIF Y > DH - 7 THEN Y := DH - 7 END ;
-    Display.CopyPatternClipped(Display.white, Display.updown, X-4, Y-7, 0, 0, 0, 0, Display.invert)
+    IF Y < 20 THEN Y := 20 ELSIF Y > DH - 7 THEN Y := DH - 7 END ;
+    Display.CopyPatternClipped(Display.white, Display.updown, X-4, Y-20, 0, 0, 0, 0, Display.invert)
   END FlipUpDown;
 
   PROCEDURE UpdateMark (F: Frame);  (*in scroll bar*)
@@ -333,7 +333,7 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.23 Extended Oberon*)
       org, org0, q: LONGINT; dy, i, k: INTEGER;
       lines: ARRAY K OF LineDesc;  (*cache to prevent re-reading of lines*)
   BEGIN (*dY # 0*)
-    IF F.trailer.next # F.trailer THEN
+    IF (F.trailer.next # F.trailer) & (F.trailer.next.next # F.trailer) THEN
       IF dY < 0 THEN dY := -dY;
         IF dY <= F.voff THEN ScrollDown(F, F.org, F.voff - dY, dY, lines, 0, 0)
         ELSIF F.org = 0 THEN ScrollDown(F, 0, 0, F.voff, lines, 0, 0)
