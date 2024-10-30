@@ -165,7 +165,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 15.5.24 Extended Oberon*)
           SYSTEM.PUT(adr, BLT + offset MOD C24);
           adr := adr - disp*4
         END ;
-        (*fixup of MOV/LDR/STR/ADD*)
+        (*fixup of LDR/STR/ADD*)
         adr := mod.prg + fixorgD*4;
         WHILE adr # mod.prg DO
           SYSTEM.GET(adr, inst);

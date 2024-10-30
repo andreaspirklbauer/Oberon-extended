@@ -160,7 +160,7 @@ MODULE Modules;  (*Link and load on RISC; NW 20.10.2013 / 8.1.2019 / AP 1.5.23 E
           SYSTEM.PUT(adr, BLT + offset MOD C24);
           adr := adr - disp*4
         END ;
-        (*fixup of MOV/LDR/STR/ADD*)
+        (*fixup of LDR/STR/ADD*)
         adr := mod.prg + fixorgD*4;
         WHILE adr # mod.prg DO
           SYSTEM.GET(adr, inst);
