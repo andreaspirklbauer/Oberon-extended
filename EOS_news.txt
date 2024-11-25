@@ -79,4 +79,4 @@
 2024-05-15 ORL - Write each module to the boot file immediately after linking, thereby reducing memory consumption
 2024-05-18 ORP - Allow selecting a text in Oberon.Log using ^ during the first call of Compile after loading ORP (omit Texts.Append in init code)
 2024-10-01 TextFrames - Better alignment of the mouse pointer with the mark in the scroll bar during scrolling
-2024-12-01 ORP - Improve the code to parse pointer base types in ORP.Type0
+2024-12-01 ORP - Improve the handling of pointer base types and checking for exported types in ORP.Type0
