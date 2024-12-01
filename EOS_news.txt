@@ -81,3 +81,4 @@
 2024-10-01 TextFrames - Better alignment of the mouse pointer with the mark in the scroll bar during scrolling
 2024-12-01 ORP - Improve handling of pointer base types and checking for exported types in ORP.Type0
 2024-12-01 ORG - Allow variable space for standalone programs to be larger than 64KB (ORG.PutPair)
+2024-12-01 ORG, ORL, Modules - Simplify fixup of MOV'/IOR, MOV'/LDR and MOV'/STR instruction pairs

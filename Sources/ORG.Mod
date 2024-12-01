@@ -113,14 +113,14 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     code[pc] := (((op+12) * C6 + mno) * C8 + pno) * C14 + disp MOD C14; INC(pc)
   END Put3a;
 
-  PROCEDURE PutPair(base, op, a, b, off, format: LONGINT);
+  PROCEDURE PutPair(base, op, a, b, off: LONGINT);
   BEGIN (*emit instruction pair to be fixed up by loader, base <= 0, 0 <= off < C24*)
     IF version = 0 THEN Put1(Mov+U, RH, 0, (VarOrg0 + off) DIV C16)
     ELSIF pc - fixorgD < C12 THEN
-      Put1b(RH, -base, off DIV C16 MOD C8, pc-fixorgD); fixorgD := pc-1
+      Put1b(RH, -base, off DIV C16 MOD C8, pc-fixorgD); fixorgD := pc-1  (*Mov+U*)
     ELSE ORS.Mark("fixup impossible")
     END ;
-    IF format = 1 THEN Put1(op, a, b, off MOD C16) ELSE Put2(op, a, b, off MOD C16) END
+    IF op = Ior THEN Put1(Ior, a, b, off MOD C16) ELSE Put2(op, a, b, off MOD C16) (*Ldr/Str*) END
   END PutPair;
 
   PROCEDURE CheckRegs*;
@@ -208,14 +208,14 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         IF x.type.form = ORB.Proc THEN
           IF x.r > 0 THEN (*local*) ORS.Mark("not allowed")
           ELSIF x.r = 0 THEN (*global*) Put3(BL, 7, 0); Put1a(Sub, RH, LNK, pc*4 - x.a)
-          ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a + C8, 1)  (*mark as progbase-relative*)
+          ELSE (*imported*) PutPair(x.r, Ior, RH, RH, x.a + C8)  (*mark as progbase-relative*)
           END
         ELSE Put1a(Mov, RH, 0, x.a)
         END ;
         x.r := RH; incR
       ELSIF x.mode = ORB.Var THEN
         IF x.r > 0 THEN (*local*) Put2(op, RH, SP, x.a + frame)
-        ELSE PutPair(x.r, op, RH, RH, x.a, 2)
+        ELSE PutPair(x.r, op, RH, RH, x.a)
         END ;
         x.r := RH; incR
       ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame); Put2(op, RH, RH, x.b); x.r := RH; incR
@@ -233,7 +233,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN
     IF x.mode = ORB.Var THEN
       IF x.r > 0 THEN (*local*) Put1a(Add, RH, SP, x.a + frame)
-      ELSE PutPair(x.r, Add, RH, RH, x.a, 1)
+      ELSE PutPair(x.r, Ior, RH, RH, x.a)
       END ;
       x.r := RH; incR
     ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame);
@@ -263,16 +263,16 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   PROCEDURE loadTypTagAdr(T: ORB.Type);
   BEGIN
-    IF T.mno <= 0 THEN PutPair(0, Add, RH, RH, T.len, 1); T.len := pc-1  (*insert into fixorgD chain, fixed up in Close*)
-    ELSE (*imported*) PutPair(-T.mno, Add, RH, RH, T.len, 1)
+    IF T.mno <= 0 THEN PutPair(0, Ior, RH, RH, T.len); T.len := pc-1  (*insert into fixorgD chain, fixed up in Close*)
+    ELSE (*imported*) PutPair(-T.mno, Ior, RH, RH, T.len)
     END ;
     incR
   END loadTypTagAdr;
 
   PROCEDURE loadStringAdr(VAR x: Item);
   BEGIN
-    IF x.r >= 0 THEN PutPair(0, Add, RH, RH, varx + x.a, 1)
-    ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a, 1)
+    IF x.r >= 0 THEN PutPair(0, Ior, RH, RH, varx + x.a)
+    ELSE (*imported*) PutPair(x.r, Ior, RH, RH, x.a)
     END ;
     x.mode := Reg; x.r := RH; incR
   END loadStringAdr;
@@ -344,8 +344,8 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
       IF s = 4 THEN Put1(Lsl, y.r, y.r, 2) ELSIF s > 1 THEN Put1a(Mul, y.r, y.r, s) END ;
       IF x.mode = ORB.Var THEN
         IF x.r > 0 THEN (*local*) Put0(Add, y.r, SP, y.r); INC(x.a, frame)
-        ELSIF x.r = 0 THEN (*global*) PutPair(0, Add, RH, RH, 0, 1); Put0(Add, y.r, RH, y.r)
-        ELSE (*imported*) PutPair(x.r, Add, RH, RH, x.a, 1); Put0(Add, y.r, RH, y.r); x.a := 0
+        ELSIF x.r = 0 THEN (*global*) PutPair(0, Ior, RH, RH, 0); Put0(Add, y.r, RH, y.r)
+        ELSE (*imported*) PutPair(x.r, Ior, RH, RH, x.a); Put0(Add, y.r, RH, y.r); x.a := 0
         END ;
         x.r := y.r; x.mode := RegI
       ELSIF x.mode = ORB.Par THEN
@@ -360,7 +360,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN
     IF x.mode = ORB.Var THEN
       IF x.r > 0 THEN (*local*) Put2(Ldr, RH, SP, x.a + frame)
-      ELSE PutPair(x.r, Ldr, RH, RH, x.a, 2)
+      ELSE PutPair(x.r, Ldr, RH, RH, x.a)
       END ;
       NilCheck; x.r := RH; incR
     ELSIF x.mode = ORB.Par THEN
@@ -686,7 +686,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     IF x.type.size = 1 THEN op := Str+1 ELSE op := Str END ;
     IF x.mode = ORB.Var THEN
       IF x.r > 0 THEN (*local*) Put2(op, y.r, SP, x.a + frame)
-      ELSE PutPair(x.r, op, y.r, RH, x.a, 2)
+      ELSE PutPair(x.r, op, y.r, RH, x.a)
       END
     ELSIF x.mode = ORB.Par THEN Put2(Ldr, RH, SP, x.a + frame); Put2(op, y.r, RH, x.b);
     ELSIF x.mode = RegI THEN Put2(op, y.r, x.r, x.a); DEC(RH);

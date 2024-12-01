@@ -1,10 +1,10 @@
-MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 15.5.24 Extended Oberon*)
+MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 1.12.24 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, Files, Modules, Texts, Oberon;
   CONST versionkey = 1X; versionkey0 = 0X; DescSize = 96; MnLength = 32; BootSec = 2; BootSize = 192; FPrint = 12345678H;
     noerr* = 0; nofile* = 1; badversion* = 2; badkey* = 3; badfile* = 4; nospace* = 5;
     TrapAdr = 4; DestAdr = 8; MemAdr = 12; AllocAdr = 16; RootAdr = 20; StackAdr = 24; FPrintAdr = 28; ModAdr = 32;
     U = 20000000H; V = 10000000H; B = 100000H;  (*modifier bits*)
-    MOV = 40000000H; IOR = 40060000H; BCT = 0E7000000H; BLT = 0F7000000H; F2 = -2;  (*instructions*)
+    MOV = 40000000H; IOR = 40060000H; BCT = 0E7000000H; BLT = 0F7000000H;  (*instructions*)
     C4 = 10H; C6 = 40H; C8 = 100H; C10 = 400H; C12 = 1000H; C14 = 4000H; C16 = 10000H; C18 = 40000H;
     C20 = 100000H; C22 = 400000H; C24 = 1000000H; C26 = 4000000H; C28 = 10000000H; C30 = 40000000H;
 
@@ -165,7 +165,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 15.5.24 Extended Oberon*)
           SYSTEM.PUT(adr, BLT + offset MOD C24);
           adr := adr - disp*4
         END ;
-        (*fixup of LDR/STR/ADD*)
+        (*fixup of MOV/IOR/LDR/STR*)
         adr := mod.prg + fixorgD*4;
         WHILE adr # mod.prg DO
           SYSTEM.GET(adr, inst);
@@ -185,10 +185,7 @@ MODULE ORL;  (*Oberon boot linker/loader for RISC / AP 15.5.24 Extended Oberon*)
             END
           END ;
           SYSTEM.PUT(adr, MOV+U+B + pno*C24 + offset DIV C16);  (*mark as fixed up by setting the B bit*)
-          IF inst DIV C30 = F2 THEN inst := inst DIV C20 * C20
-          ELSE inst := IOR + inst DIV C24 MOD C4 * C24 + inst DIV C20 MOD C4 * C20
-          END ;
-          SYSTEM.PUT(adr+4, inst + offset MOD C16);
+          SYSTEM.PUT(adr+4, inst DIV C16 * C16 + offset MOD C16);
           adr := adr - disp*4
         END ;
         (*fixup of type descriptors*)
