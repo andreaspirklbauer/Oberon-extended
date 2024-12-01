@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.5.24 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.12.24 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -114,17 +114,13 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put3a;
 
   PROCEDURE PutPair(base, op, a, b, off, format: LONGINT);
-    VAR high: LONGINT;
-  BEGIN (*emit instruction pair to be fixed up by loader, 0 <= off < C24*)
-    IF version = 0 THEN Put1(Mov, RH, 0, VarOrg0)
+  BEGIN (*emit instruction pair to be fixed up by loader, base <= 0, 0 <= off < C24*)
+    IF version = 0 THEN Put1(Mov+U, RH, 0, (VarOrg0 + off) DIV C16)
     ELSIF pc - fixorgD < C12 THEN
-      IF base >= 0 THEN high := off DIV C16 MOD C8; off := off MOD C16; base := 0
-      ELSE (*imported*) high := 0
-      END ;
-      Put1b(RH, -base, high, pc-fixorgD); fixorgD := pc-1
+      Put1b(RH, -base, off DIV C16 MOD C8, pc-fixorgD); fixorgD := pc-1
     ELSE ORS.Mark("fixup impossible")
     END ;
-    IF format = 1 THEN Put1(op, a, b, off) ELSE Put2(op, a, b, off) END
+    IF format = 1 THEN Put1(op, a, b, off MOD C16) ELSE Put2(op, a, b, off MOD C16) END
   END PutPair;
 
   PROCEDURE CheckRegs*;
