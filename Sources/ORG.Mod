@@ -115,7 +115,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   PROCEDURE PutPair(base, op, a, b, off: LONGINT);
   BEGIN (*emit instruction pair to be fixed up by loader, base <= 0, 0 <= off < C24*)
-    IF version = 0 THEN Put1(Mov+U, RH, 0, (VarOrg0 + off) DIV C16)
+    IF version = 0 THEN off := off + VarOrg0; Put1(Mov+U, RH, 0, off DIV C16)
     ELSIF pc - fixorgD < C12 THEN
       Put1b(RH, -base, off DIV C16 MOD C8, pc-fixorgD); fixorgD := pc-1  (*Mov+U*)
     ELSE ORS.Mark("fixup impossible")
