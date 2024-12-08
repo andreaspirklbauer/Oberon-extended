@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.12.24 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 8.12.24 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -96,7 +96,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE Put2(op, a, b, off: LONGINT);
     VAR r: INTEGER;
   BEGIN (*emit load/store instruction*)
-    IF ABS(off) >= C19 THEN r := RH;
+    IF (off < -C19) OR (off >= C19) THEN r := RH;
       IF (a = RH) OR (b = RH) THEN incR END ;
       Put1(Mov+U, RH, 0, off DIV C16); Put0(Add, RH, RH, b); b := RH; off := off MOD C16; RH := r
     END ;
@@ -180,7 +180,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     VAR L1: LONGINT; p, q: INTEGER;
   BEGIN (*fix chain of instruction pairs with an address that is spread across both instructions, 0 <= adr < C24*)
     WHILE L # 0 DO p := code[L-1]; q := code[L];
-      L1 := p DIV C12 MOD C8 + q MOD C16;
+      L1 := p DIV C12 MOD C8 * C16 + q MOD C16;
       code[L-1] := p DIV C20 * C20 + adr DIV C16 MOD C8 * C12 + p MOD C12;
       code[L] := q DIV C16 * C16 + adr MOD C16;
       L := L1

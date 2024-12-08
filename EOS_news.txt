@@ -82,3 +82,4 @@
 2024-12-01 ORP - Improve handling of pointer base types and checking for exported types in ORP.Type0
 2024-12-01 ORG - Allow variable space for standalone programs to be larger than 64KB (ORG.PutPair)
 2024-12-01 ORG, ORL, Modules - Simplify fixup of MOV'/IOR, MOV'/LDR and MOV'/STR instruction pairs
+2024-12-08 ORG - ORG.FixLinkPair corrected
