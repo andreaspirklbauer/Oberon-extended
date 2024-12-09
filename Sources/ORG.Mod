@@ -94,12 +94,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END Put1b;
 
   PROCEDURE Put2(op, a, b, off: LONGINT);
-    VAR r: INTEGER;
   BEGIN (*emit load/store instruction*)
-    IF (off < -C19) OR (off >= C19) THEN r := RH;
-      IF (a = RH) OR (b = RH) THEN incR END ;
-      Put1(Mov+U, RH, 0, off DIV C16); Put0(Add, RH, RH, b); b := RH; off := off MOD C16; RH := r
-    END ;
     code[pc] := ((op * C4 + a) * C4 + b) * C20 + off MOD C20; INC(pc)
   END Put2;
 
