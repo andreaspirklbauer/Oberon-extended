@@ -84,3 +84,4 @@
 2024-12-01 ORG, ORL, Modules - Simplify fixup of MOV'/IOR, MOV'/LDR and MOV'/STR instruction pairs
 2024-12-08 ORG - ORG.FixLinkPair corrected
 2023-12-08 ORG - No need to check for large offsets in ORG.Put2 due to generation of instruction pairs in ORG.PutPair, which are fixed up by loader
+2024-12-13 ORP - Allow one-dimensional open array of array (of array of..) of fixed length, but disallow more than one open array dimension
