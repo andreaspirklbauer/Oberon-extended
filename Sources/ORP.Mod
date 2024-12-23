@@ -690,7 +690,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       ELSIF sym = ORS.case THEN
         ORS.Get(sym); x.obj := NIL; expression(x);
         IF x.type.form IN {ORB.Int, ORB.Byte, ORB.Char} THEN NumericCasePart(x)
-        ELSIF (x.obj # NIL) & (x.obj.type # NIL) &
+        ELSIF (x.obj # NIL) &
           ((x.type.form = ORB.Pointer) & (x.type.base.form = ORB.Record) OR
           (x.type.form = ORB.Record) & (x.mode = ORB.Par)) THEN TypeCasePart(x.obj)
         ELSE ORS.Mark("invalid case variable"); SkipCase
