@@ -137,14 +137,11 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF sym = ORS.arrow THEN (*super call*)
       IF obj.type.dsc = ORB.topScope.next THEN
         IF obj.type.dsc = x.obj THEN
-          ORS.Get(sym); xt := x.type; fld := ORB.FindField(obj.name, xt);
-          IF fld # NIL THEN xt := xt.base; fld := NIL;
-            WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindField(obj.name, xt); xt := xt.base END ;
-            IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN obj := fld;
-              CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base)
-            ELSE ORS.Mark("method undefined in base types")
-            END
-          ELSE ORS.Mark("method undefined at this extension level")
+          ORS.Get(sym); xt := x.type.base; fld := NIL;
+          WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindField(obj.name, xt); xt := xt.base END ;
+          IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN
+            CheckReceiver(x, fld); ORG.Method(x, fld, TRUE); DisallowMethods(x.type.base)
+          ELSE ORS.Mark("method undefined in base types")
           END
         ELSE ORS.Mark("receiver must be the same as in overriding method")
         END
