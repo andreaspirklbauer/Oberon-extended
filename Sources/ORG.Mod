@@ -27,7 +27,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
       type*: ORB.Type;
       obj*: ORB.Object;
       a*, b*, r: LONGINT;
-      rdo*, deref*, super: BOOLEAN  (*read only, dereferenced, super call*)
+      rdo*, deref, super: BOOLEAN  (*read only, dereferenced, super call*)
     END ;
     LabelRange* = RECORD low*, high*, label*: INTEGER END ;
 
@@ -373,6 +373,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     ELSE x.a := y.lev; (*mthno*)
       IF x.deref THEN x.b := ORB.Var ELSE x.b := ORB.Par END
     END ;
+    IF ~x.deref & (y.type.dsc.class # ORB.Par) THEN ORS.Mark("incompatible receiver") END ;
     x.deref := FALSE; x.super := super
   END Method;
 

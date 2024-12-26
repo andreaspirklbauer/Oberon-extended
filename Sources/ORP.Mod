@@ -91,11 +91,6 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     END
   END CheckExport;
 
-  PROCEDURE CheckReceiver(VAR x: ORG.Item; proc: ORB.Object);
-  BEGIN
-    IF ~x.deref & (proc.type.dsc.class # ORB.Par) THEN ORS.Mark("incompatible receiver") END
-  END CheckReceiver;
-
   PROCEDURE IsExtension(t0, t1: ORB.Type): BOOLEAN;
   BEGIN (*t1 is an extension of t0*)
     RETURN (t0 = t1) OR (t1 # NIL) & IsExtension(t0, t1.base)
@@ -158,14 +153,14 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
                     IF obj.type.dsc = x.obj THEN
                       obj := ORB.thisfield(x.type.base); ORS.Get(sym);
                       IF (obj # NIL) & (obj.type.form = ORB.TProc) THEN
-                        CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base); x.type := obj.type
+                        ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base); x.type := obj.type
                       ELSE ORS.Mark("method undefined in base types")
                       END
                     ELSE ORS.Mark("receiver must be the same as in overriding method")
                     END
                   ELSE ORS.Mark("redefined method must be called from overriding method")
                   END
-                ELSE (*method call*) CheckReceiver(x, obj); ORG.Method(x, obj, FALSE); x.type := obj.type
+                ELSE (*method call*) ORG.Method(x, obj, FALSE); x.type := obj.type
                 END
               ELSE ORG.Field(x, obj); x.type := obj.type
               END
