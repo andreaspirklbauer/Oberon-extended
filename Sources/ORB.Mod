@@ -1,4 +1,4 @@
-MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.23 Extended Oberon*)
+MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 13.12.24 Extended Oberon*)
   IMPORT Files, ORS;
   (*Definition of data types Object and Type, which together form the data structure
     called "symbol table". Contains procedures for creation of Objects, and for search:
@@ -104,15 +104,6 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
     WHILE (fld # NIL) & (fld.name # ORS.id) DO fld := fld.next END ;
     RETURN fld
   END thisfield;
-
-  PROCEDURE FindField*(id: ORS.Ident; rec: Type): Object;  (*search id in fields of rec proper, but not its base types*)
-    VAR fld, bot: Object;
-  BEGIN fld := rec.dsc;
-    IF rec.base # NIL THEN bot := rec.base.dsc ELSE bot := NIL END ;
-    WHILE (fld # bot) & (fld.name # id) DO fld := fld.next END ;
-    IF fld = bot THEN fld := NIL END ;
-    RETURN fld
-  END FindField;
 
   PROCEDURE NofMethods*(rec: Type): INTEGER;  (*number of methods bound to rec and its base types*)
     VAR fld: Object; max: INTEGER;

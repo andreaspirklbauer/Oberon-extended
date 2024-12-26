@@ -131,26 +131,6 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF ~guard THEN x.type := ORB.boolType END
   END TypeTest;
 
-  PROCEDURE Method(VAR x: ORG.Item; obj: ORB.Object);
-    VAR fld: ORB.Object; xt: ORB.Type;
-  BEGIN
-    IF sym = ORS.arrow THEN (*super call*)
-      IF obj.type.dsc = ORB.topScope.next THEN
-        IF obj.type.dsc = x.obj THEN
-          ORS.Get(sym); xt := x.type.base; fld := NIL;
-          WHILE (fld = NIL) & (xt # NIL) DO fld := ORB.FindField(obj.name, xt); xt := xt.base END ;
-          IF (fld # NIL) & (fld.type.form = ORB.TProc) THEN
-            CheckReceiver(x, fld); ORG.Method(x, fld, TRUE); DisallowMethods(x.type.base)
-          ELSE ORS.Mark("method undefined in base types")
-          END
-        ELSE ORS.Mark("receiver must be the same as in overriding method")
-        END
-      ELSE ORS.Mark("redefined method must be called from overriding method")
-      END
-    ELSE (*method call*) CheckReceiver(x, obj); ORG.Method(x, obj, FALSE)
-    END
-  END Method;
-
   PROCEDURE selector(VAR x: ORG.Item);
     VAR y: ORG.Item; obj: ORB.Object;
   BEGIN
@@ -172,8 +152,23 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           IF x.type.form = ORB.Record THEN
             obj := ORB.thisfield(x.type); ORS.Get(sym);
             IF obj # NIL THEN
-              IF obj.type.form = ORB.TProc THEN Method(x, obj) ELSE ORG.Field(x, obj) END ;
-              x.type := obj.type
+              IF obj.type.form = ORB.TProc THEN  (*type-bound procedure*)
+                IF sym = ORS.arrow THEN (*super call*)
+                  IF obj.type.dsc = ORB.topScope.next THEN
+                    IF obj.type.dsc = x.obj THEN
+                      obj := ORB.thisfield(x.type.base); ORS.Get(sym);
+                      IF (obj # NIL) & (obj.type.form = ORB.TProc) THEN
+                        CheckReceiver(x, obj); ORG.Method(x, obj, TRUE); DisallowMethods(x.type.base); x.type := obj.type
+                      ELSE ORS.Mark("method undefined in base types")
+                      END
+                    ELSE ORS.Mark("receiver must be the same as in overriding method")
+                    END
+                  ELSE ORS.Mark("redefined method must be called from overriding method")
+                  END
+                ELSE (*method call*) CheckReceiver(x, obj); ORG.Method(x, obj, FALSE); x.type := obj.type
+                END
+              ELSE ORG.Field(x, obj); x.type := obj.type
+              END
             ELSE ORS.Mark("undef")
             END
           ELSE ORS.Mark("not a record")
