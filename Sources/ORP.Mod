@@ -745,9 +745,9 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           END ;
           typ.nofpar := typ.base.nofpar + 1; (*"nofpar" here abused for extension level*)
           bot := typ.base.dsc; offset := typ.base.size
-        ELSE ORS.Mark("type expected")
+        ELSE typ.base := ORB.intType; ORS.Mark("type expected")
         END
-      ELSE ORS.Mark("ident expected")
+      ELSE typ.base := ORB.intType; ORS.Mark("ident expected")
       END ;
       Check(ORS.rparen, "no )")
     END ;
