@@ -53,7 +53,7 @@ MODULE M1;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   END Method1c;
 
   PROCEDURE (VAR rec: Rec1Ext11) Method2a* (str: ARRAY OF CHAR; p: LONGINT);
-  BEGIN Out.String("  Hello from M1.Rec1Ext11.Method2a"); Out.Ln
+  BEGIN Out.String("  Hello from M1.Rec1Ext11.Method2a"); Out.Ln;
     (*rec.Method2a^(str, p)*)  (*would lead to "method undefined in base types"* error mesage*)
   END Method2a;
 

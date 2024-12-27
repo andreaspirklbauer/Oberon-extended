@@ -25,22 +25,11 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   PROCEDURE (VAR r: Rec) Method2*(str: ARRAY OF CHAR; a: INTEGER; VAR b: INTEGER);
   BEGIN Out.String("  Hello from M3.Rec.Method2; str = "); Out.String(str);
     Write(r.x0, r.x1, r.x2, r.x3, r.x4, r.x5, r.x6, a, b); INC(b);
-
     (*
-
-    (*super call of a method bound to the base type of an extension) via pointer*)
-    Out.String("Calling ptrext.Method2 with str = Method2s (super call via pointer)"); Out.Ln;
-    INC(ptrext.x2);
-    ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln;
-    (*would lead to a "receiver must be the same as in overriding method" error*)
-
-    
-    (*super call of a method bound to the base type of an extension) via record*)
+    (*super call of a method bound to the base type of an extension via record*)
     Out.String("Calling recext.Method2^ with str = Method2s (super call via record)"); Out.Ln;
-    recext.x2 := 1;
-    recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln
+    recext.x2 := 1; recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln
     (*would lead to a "receiver must be the same as in overriding method" error*)
-
     *)
   END Method2;
 
@@ -71,7 +60,8 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
 
   PROCEDURE (VAR r: RecExt) Method4*(str: ARRAY OF CHAR; a: INTEGER; VAR b: INTEGER);
   BEGIN Out.String("  Hello from M3.RecExt.Method4; str = "); Out.String(str);
-    Write(r.x0, r.x1, r.x2, r.x3, r.x4, r.x5, r.x6, a, b); INC(b)
+    Write(r.x0, r.x1, r.x2, r.x3, r.x4, r.x5, r.x6, a, b); INC(b);
+    (* r.Method4^("Method4s", ptrext.x4, B) *) (*would lead to "method undefined in base types" error*)
   END Method4;
 
   PROCEDURE (VAR r: RecExt) Method6*(str: ARRAY OF CHAR; a: INTEGER; VAR b: INTEGER);
@@ -101,12 +91,12 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
 
   PROCEDURE Go1b*;  (*caller EXPLICITLY de-references ptr^ BEFORE calling the method which accepts a POINTER*)
   BEGIN Out.String("Calling ptr^.Method1 with str = Method1b"); Out.Ln;
-    INC(ptr^.x1); ptr.Method1("Method1b", ptr^.x1, B); Out.Ln
+    INC(ptr^.x1); ptr^.Method1("Method1b", ptr^.x1, B); Out.Ln
   END Go1b;
 
-  (*PROCEDURE Go1r*;  (*would lead to "incompatible receiver" error*)
-  BEGIN INC(rec.x2); rec.Method1("Method1r", rec.x2, B); Out.Ln
-  END Go1r;*)
+  PROCEDURE Go1r*;
+  BEGIN INC(rec.x2); (* rec.Method1("Method1r", rec.x2, B); Out.Ln *)  (*would lead to "incompatible receiver" error*)
+  END Go1r;
 
   PROCEDURE Go2*;  (*caller AUTOMATICALLY passes the de-referenced ptr^ to the method which accepts a VAR record*)
   BEGIN Out.String("Calling ptr.Method2 with str = Method2"); Out.Ln;
@@ -123,21 +113,19 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
     INC(ptrext.x2); ptrext.Method2("Method2e", ptrext.x2, B); Out.Ln
   END Go2e;
 
-  (*
   PROCEDURE Go2s*;  (*super call of a method bound to the base type of an extension) via pointer*)
   BEGIN Out.String("Calling ptrext.Method2 with str = Method2s (super call via pointer)"); Out.Ln;
     INC(ptrext.x2);
-    ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln
+    (* ptrext.Method2^("Method2s (super call via pointer)", ptrext.x2, B); Out.Ln *)
     (*would lead to a "redefined method must be called from overriding method" error*)
   END Go2s;
 
   PROCEDURE Go2sr*;  (*super call of a method bound to the base type of an extension) via record*)
   BEGIN Out.String("Calling recext.Method2^ with str = Method2s (super call via record)"); Out.Ln;
     recext.x2 := 1;
-    recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln
+    (* recext.Method2^("Method2s (super call via record)", recext.x2, B); Out.Ln *)
     (*would lead to a "redefined method must be called from overriding method" error*)
   END Go2sr;
-  *)
 
   PROCEDURE Go3*;  (*call of a method that is a function procedure*)
     VAR res: INTEGER;
@@ -155,9 +143,9 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
     INC(ptrext.x4); ptrext.Method4("Method4e", ptrext.x4, B); Out.Ln
   END Go4e;
 
-  (*PROCEDURE Go4s*;  (*would lead to "method undefined in base types" error*)
-  BEGIN INC(ptrext.x4); ptrext.Method4^("Method4s", ptrext.x4, B)
-  END Go4s;*)
+  PROCEDURE Go4s*;  (*call a method which IN turn calls a redefined method*)
+  BEGIN INC(ptrext.x4); ptrext.Method4("Method4s", ptrext.x4, B)
+  END Go4s;
 
   PROCEDURE Go5*;  (*ptr is automatically dereferenced by the caller when the method is called*)
   BEGIN Out.String("Calling ptr.Method5 with str = Method5"); Out.Ln;
@@ -166,7 +154,7 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   
   PROCEDURE Go5b*;  (*caller explicitly de-references ptr^ BEFORE calling the method*)
   BEGIN Out.String("Calling ptr.Method5 with str = Method5b"); Out.Ln;
-    INC(ptr^.x5); ptr.Method5("Method5b", ptr.x5, B); Out.Ln
+    INC(ptr^.x5); ptr^.Method5("Method5b", ptr.x5, B); Out.Ln
   END Go5b;
 
   PROCEDURE Go5pe*;  (*ptr to an EXTENSION is passed to VAR param of a BASE type*)
@@ -181,7 +169,7 @@ MODULE M3;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
 
   PROCEDURE Go6b*;  (*caller EXPLICITLY passes the de-referenced ptr^ to a method which accepts a VAR record*)
   BEGIN Out.String("Calling ptr.Method6 with str = Method6b"); Out.Ln;
-    INC(ptr^.x6); ptr.Method6("Method6b", ptr.x6, B); Out.Ln
+    INC(ptr^.x6); ptr^.Method6("Method6b", ptr.x6, B); Out.Ln
   END Go6b;
 
   PROCEDURE Go6pe*;  (*ptr to an extension is passed to a VAR param of a base type*)

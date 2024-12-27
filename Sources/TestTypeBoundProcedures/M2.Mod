@@ -20,11 +20,11 @@ MODULE M2;  (*test type-bound procedures / AP 1.8.23 Extended Oberon*)
   PROCEDURE (VAR st: Rec1Ext121) Method3d* (str: ARRAY OF CHAR; p: LONGINT);  (*exported*)
   BEGIN END Method3d;
 
-  PROCEDURE (VAR rec: Rec1Ext121) Method1* (str: ARRAY OF CHAR; p: LONGINT);  (*overwrites M1.RecExt2b.Method2b*)
+  PROCEDURE (VAR rec: Rec1Ext121) Method1* (str: ARRAY OF CHAR; p: LONGINT);  (*overwrites M1.RecExt12.Method1*)
   BEGIN Out.String("  Hello from M2.Rec1Ext121.Method1; str = "); Out.String(str); Out.String(", cnt ="); Out.Int(p, 4); Out.Ln;
     Out.String("  Calling method M2.Rec1Ext121.Method2b = M1.RecExt2b.Method2b"); Out.Ln;
     rec.x1 := 66; rec.Method2b(str, p);
-    (* rec.Method2b^(str, p); *)  (*would lead to "method undefined at this extension level" error*)
+    (* rec.Method2b^(str, p); *)  (*would lead to "redefined method must be called from overriding method" error*)
   END Method1;
 
   PROCEDURE Go1*;
