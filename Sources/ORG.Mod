@@ -368,13 +368,11 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   END DeRef;
 
   PROCEDURE Method*(VAR x: Item; y: ORB.Object; super: BOOLEAN);
-  BEGIN loadAdr(x); (*receiver*)
+  BEGIN loadAdr(x); (*receiver*) x.super := super;
     IF super THEN x.a := y.val; (*mthadr/exno*) x.b := -y.type.mno
     ELSE x.a := y.lev; (*mthno*)
       IF x.deref THEN x.b := ORB.Var ELSE x.b := ORB.Par END
-    END ;
-    IF ~x.deref & (y.type.dsc.class # ORB.Par) THEN ORS.Mark("incompatible receiver") END ;
-    x.deref := FALSE; x.super := super
+    END
   END Method;
 
   PROCEDURE Q(T: ORB.Type; VAR tdw: LONGINT);
@@ -773,9 +771,11 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   PROCEDURE ReceiverParam*(VAR x: Item; par: ORB.Object);
   BEGIN
-    IF x.r # RH THEN Put0(Mov, RH, 0, x.r) END ;  (*receiver -> R0*)
+    IF x.r # RH THEN Put0(Mov, RH, 0, x.r) END ;  (*receiver*)
     incR;
-    IF par.class = ORB.Par THEN (*record*) loadTypTagAdr(par.type) END  (*type tag -> R1*)
+    IF par.class = ORB.Par THEN (*record*) loadTypTagAdr(par.type)  (*type tag*)
+    ELSIF ~x.deref THEN ORS.Mark("incompatible receiver")
+    END
   END ReceiverParam;
 
   (*For Statements*)
