@@ -1,4 +1,4 @@
-MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 8.12.24 Extended Oberon*)
+MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code generator for RISC / AP 1.1.25 Extended Oberon*)
   IMPORT SYSTEM, Files, ORS, ORB;
   (*Code generator for Oberon compiler for RISC processor.
      Procedural interface to Parser ORP; result in array "code".
@@ -859,11 +859,11 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
         IF x.b = ORB.Var THEN Put2(Ldr, RH, 0, -8) ELSE Put0(Mov, RH, 0, 1) END ;
         Put2(Ldr, RH, RH, -4-x.a*4); Put3(BLR, 7, RH)
       END
-    ELSIF x.mode = ORB.Const THEN  (*regular procedure*)
+    ELSIF x.mode = ORB.Const THEN
       IF x.r >= 0 THEN Put3(BL, 7, (x.a DIV 4)-pc-1)
       ELSE (*imported*) Put3a(BL, -x.r, x.a, pc-fixorgP); fixorgP := pc-1
       END
-    ELSE  (*installed procedure*)
+    ELSE
       IF x.mode <= ORB.Par THEN load(x); DEC(RH)
       ELSE Put2(Ldr, RH, SP, 0); Put1(Add, SP, SP, 4); DEC(r); DEC(frame, 4)
       END ;
