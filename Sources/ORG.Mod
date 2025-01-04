@@ -773,7 +773,7 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   BEGIN
     IF x.r # RH THEN Put0(Mov, RH, 0, x.r) END ;  (*receiver*)
     incR;
-    IF par.class = ORB.Par THEN (*record*) loadTypTagAdr(par.type)  (*type tag*)
+    IF par.class = ORB.Par THEN loadTypTagAdr(par.type)  (*type tag*)
     ELSIF ~x.deref THEN ORS.Mark("incompatible receiver")
     END
   END ReceiverParam;
@@ -871,9 +871,9 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
       Put3(BLR, 7, RH)
     END ;
     IF x.type.base.form = ORB.NoTyp THEN (*procedure*) RH := 0
-    ELSE  (*function*)
-      IF r > 0 THEN Put0(Mov, r, 0, 0); RestoreRegs(r) END ;
-      x.mode := Reg; x.r := r; RH := r+1
+    ELSE (*function*)
+      IF r > 0 THEN Put0(Mov, r, 0, 0); RestoreRegs(r); RH := r ELSE RH := 0 END ;
+      x.mode := Reg; x.r := RH; incR
     END
   END Call;
 
