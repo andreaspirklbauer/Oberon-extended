@@ -295,9 +295,10 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE MakeItem*(VAR x: Item; y: ORB.Object);
   BEGIN x.obj := y; x.mode := y.class; x.type := y.type; x.a := y.val; x.rdo := y.rdo; x.deref := FALSE;
     IF y.class = ORB.Par THEN x.b := 0
-    ELSIF (y.class = ORB.Const) & (y.type.form = ORB.String) THEN x.r := y.lev;
-      x.a := y.val MOD C20; (*strx/exno*) x.b := y.val DIV C20 (*len*)
-    ELSE x.r := y.lev
+    ELSE x.r := y.lev;
+      IF (y.class = ORB.Const) & (y.type.form = ORB.String) THEN
+        x.a := y.val MOD C20; (*strx/exno*) x.b := y.val DIV C20 (*len*)
+      END
     END
   END MakeItem;
 
