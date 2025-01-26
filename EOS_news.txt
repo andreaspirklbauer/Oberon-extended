@@ -87,3 +87,4 @@
 2024-12-13 ORP - Allow one-dimensional open array of array (of array of..) of fixed length, but disallow more than one open array dimension
 2025-01-01 ORG - Remove potentially misleading comments, add check for register stack overflow in ORG.Call
 2025-01-01 ORP - Improve check for compile-time error in ORP.RecordType if a field of a private record is exported
+2025-01-23 ORG, ORP - Eliminate ORG.OpenArrayParam, improve code in ORP.Parameter to make it more consistent with ORP.StatSequence

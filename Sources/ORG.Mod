@@ -736,15 +736,6 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
 
   (* Code generation for parameters *)
 
-  PROCEDURE OpenArrayParam*(VAR x: Item);
-  BEGIN loadAdr(x);
-    IF x.type.len >= 0 THEN Put1a(Mov, RH, 0, x.type.len)
-    ELSIF x.type.size > 0 THEN (*open array param*) Put2(Ldr, RH, SP, x.a+4+frame)
-    ELSE (*dynamic open array*) Put2(Ldr, RH, x.r, -16) (*len*)
-    END ;
-    incR
-  END OpenArrayParam;
-
   PROCEDURE VarParam*(VAR x: Item; ftype: ORB.Type);
     VAR xmd: INTEGER;
   BEGIN xmd := x.mode; loadAdr(x);
