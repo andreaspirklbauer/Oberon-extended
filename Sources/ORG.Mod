@@ -693,22 +693,33 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE StoreStruct*(VAR x, y: Item); (* x := y, frame = 0 *)
     VAR s, pc0: LONGINT;
   BEGIN loadAdr(x); loadAdr(y);
-    IF (x.type.form = ORB.Array) & (x.type.len > 0) THEN
-      IF y.type.len >= 0 THEN
+    IF (x.type.form = ORB.Array) & (x.type.len # 0) & (y.type.len # 0) THEN
+      IF (x.type.len < 0) OR (y.type.len < 0) THEN
+        IF y.type.len < 0 THEN  (*y open array param or dynamic open array*)
+          IF y.type.size > 0 THEN Put2(Ldr, RH, SP, y.a+4) ELSE Put2(Ldr, RH, y.r, -16) END ;  (*y len*)
+          s := y.type.base.size;  (*y element size*)
+          pc0 := pc; Put3(BC, EQ, 0);
+          IF s = 1 THEN Put1(Add, RH, RH, 3); Put1(Asr, RH, RH, 2)
+          ELSIF s # 4 THEN Put1a(Mul, RH, RH, s DIV 4)
+          END
+        ELSE Put1a(Mov, RH, 0, (y.type.size+3) DIV 4)
+        END ;
+        IF check THEN (*check array lengths*) incR;
+          IF x.type.len < 0 THEN  (*x open array param or dynamic open array*)
+            IF x.type.size > 0 THEN Put2(Ldr, RH, SP, x.a+4) ELSE Put2(Ldr, RH, x.r, -16) END ;  (*x len*)
+            s := x.type.base.size;  (*x element size*)
+            IF s = 1 THEN Put1(Add, RH, RH, 3); Put1(Asr, RH, RH, 2)
+            ELSIF s # 4 THEN Put1a(Mul, RH, RH, s DIV 4)
+            END
+          ELSE Put1a(Mov, RH, 0, (x.type.size+3) DIV 4)
+          END ;
+          Put0(Cmp, RH, RH-1, RH); Trap(GT, 3); DEC(RH)
+        END ;
+        IF y.type.len < 0 THEN fix3(pc0, pc + 5 - pc0) END
+      ELSE  (*x, y fixed length arrays*)
         IF x.type.size = y.type.size THEN Put1a(Mov, RH, 0, (y.type.size+3) DIV 4)
         ELSE ORS.Mark("different length/size, not implemented")
         END
-      ELSE (*y open array param or dynamic open array*)
-        IF y.type.size > 0 THEN Put2(Ldr, RH, SP, y.a+4) ELSE Put2(Ldr, RH, y.r, -16) END ; (*len*)
-        s := y.type.base.size;  (*element size*)
-        pc0 := pc; Put3(BC, EQ, 0);
-        IF s = 1 THEN Put1(Add, RH, RH, 3); Put1(Asr, RH, RH, 2)
-        ELSIF s # 4 THEN Put1a(Mul, RH, RH, s DIV 4)
-        END ;
-        IF check THEN (*check array lengths*) incR;
-          Put1a(Mov, RH, 0, (x.type.size+3) DIV 4); Put0(Cmp, RH, RH-1, RH); Trap(GT, 3); DEC(RH)
-        END ;
-        fix3(pc0, pc + 5 - pc0)
       END
     ELSIF x.type.form = ORB.Record THEN Put1a(Mov, RH, 0, x.type.size DIV 4)
     ELSE ORS.Mark("inadmissible assignment")
@@ -724,8 +735,8 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
    BEGIN loadAdr(x); len := x.type.len;
     IF len >= 0 THEN
       IF len <  y.b THEN ORS.Mark("string too long") END
-    ELSIF check THEN (*x open array param or dynamic open array*)
-      IF x.type.size > 0 THEN Put2(Ldr, RH, SP, x.a+4) ELSE Put2(Ldr, RH, x.r, -16) END ; (*len*)
+    ELSIF check THEN  (*x open array param or dynamic open array*)
+      IF x.type.size > 0 THEN Put2(Ldr, RH, SP, x.a+4) ELSE Put2(Ldr, RH, x.r, -16) END ;  (*x len*)
       Put1(Cmp,RH, RH, y.b); Trap(LT, 3)
     END ;
     loadStringAdr(y);
@@ -739,10 +750,10 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
   PROCEDURE VarParam*(VAR x: Item; ftype: ORB.Type);
     VAR xmd: INTEGER;
   BEGIN xmd := x.mode; loadAdr(x);
-    IF (ftype.form = ORB.Array) & (ftype.len < 0) THEN (*open array*)
+    IF (ftype.form = ORB.Array) & (ftype.len < 0) THEN  (*open array*)
       IF x.type.len >= 0 THEN Put1a(Mov, RH, 0, x.type.len)
-      ELSIF x.type.size > 0 THEN (*open array param*) Put2(Ldr, RH, SP, x.a+4+frame)
-      ELSE (*dynamic open array*) Put2(Ldr, RH, x.r, -16) (*len*)
+      ELSE  (*x open array param or dynamic open array*)
+        IF x.type.size > 0 THEN Put2(Ldr, RH, SP, x.a+4+frame) ELSE Put2(Ldr, RH, x.r, -16) END  (*x len*)
       END ;
       incR
     ELSIF ftype.form = ORB.Record THEN
@@ -1064,10 +1075,10 @@ MODULE ORG; (* N.Wirth, 16.4.2016 / 4.4.2017 / 31.5.2019  Oberon compiler; code 
     IF x.type.len >= 0 THEN
       IF x.mode = RegI THEN DEC(RH) END ;
       x.mode := ORB.Const; x.a := x.type.len
-    ELSIF x.type.size > 0 THEN (*open array param*)
-      Put2(Ldr, RH, SP, x.a + 4 + frame); x.mode := Reg; x.r := RH; incR
-    ELSE (*dynamic open array*) Put2(Ldr, x.r, x.r, -16); (*len*) x.mode := Reg
-    END 
+    ELSE  (*x open array param or dynamic open array*)
+      IF x.type.size > 0 THEN Put2(Ldr, RH, SP, x.a+4+frame); x.r := RH; incR ELSE Put2(Ldr, x.r, x.r, -16) END ;  (*x len*)
+      x.mode := Reg
+    END
   END Len;
 
   PROCEDURE Shift*(fct: LONGINT; VAR x, y: Item);

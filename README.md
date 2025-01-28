@@ -14,9 +14,9 @@ Features
 * Improved import/export, e.g. import any number of modules and in any order
 * Simple batch execution facility
 
-**Last release:** 23.1.2025 / Extended-Oberon-1.22
+**Last release:** 27.1.2025 / Extended-Oberon-1.23
 
-**Last update:** 23.1.2025
+**Last update:** 27.1.2025
 
 The file [**S3RISCinstall.tar.gz**](Documentation/S3RISCinstall.tar.gz) always reflects the *latest* version of Extended Oberon.
 
