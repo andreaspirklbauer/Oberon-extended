@@ -89,3 +89,4 @@
 2025-01-01 ORP - Improve check for compile-time error in ORP.RecordType if a field of a private record is exported
 2025-01-23 ORG, ORP - Eliminate ORG.OpenArrayParam, improve code in ORP.Parameter to make it more consistent with ORP.StatSequence
 2025-01-27 ORG - Allow assignments to dynamic open arrays in ORG.StoreStruct (TYPE A = ARRAY OF CHAR; P = POINTER TO A; VAR p: P; NEW(p, 8); p^ := array)
+2025-02-01 ORP - Disallow passing an open array parameter to a procedure expecting a fixed-length array of BYTE (ORP.Parameter)
