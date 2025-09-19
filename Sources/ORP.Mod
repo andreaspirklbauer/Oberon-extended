@@ -1,4 +1,4 @@
-MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 1.2.25 Extended Oberon*)
+MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 / AP 19.9.25 Extended Oberon*)
   IMPORT Texts, Oberon, ORS, ORB, ORG;
   (*Author: Niklaus Wirth, 2014. Oberon-2 extensions by Andreas Pirklbauer, 2020.
     Parser of Oberon-RISC compiler. Uses Scanner ORS to obtain symbols (tokens),
@@ -19,7 +19,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     newSF: BOOLEAN;  (*option flag*)
     expression: PROCEDURE (VAR x: ORG.Item);  (*to avoid forward reference*)
     Type: PROCEDURE (VAR type: ORB.Type; expoone, expoall: BOOLEAN);
-    FormalType: PROCEDURE (VAR typ: ORB.Type; dim: INTEGER);
+    FormalType: PROCEDURE (VAR typ: ORB.Type; dim: INTEGER; expoone, expoall: BOOLEAN);
     modid: ORS.Ident;
     pbsList: PtrBase;   (*list of names of pointer base types*)
     dummy: ORB.Object;
@@ -767,12 +767,12 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     typ.form := ORB.Record; typ.dsc := bot; typ.size := (offset + 3) DIV 4 * 4; type := typ
   END RecordType;
 
-  PROCEDURE FPSection(VAR adr: LONGINT; VAR nofpar: INTEGER);
+  PROCEDURE FPSection(VAR adr: LONGINT; VAR nofpar: INTEGER; expoone, expoall: BOOLEAN);
     VAR obj, first: ORB.Object; tp: ORB.Type;
-      parsize: LONGINT; cl: INTEGER; rdo, expoone, expoall: BOOLEAN;
+      parsize: LONGINT; cl: INTEGER; rdo, dmy: BOOLEAN;
   BEGIN
     IF sym = ORS.var THEN ORS.Get(sym); cl := ORB.Par ELSE cl := ORB.Var END ;
-    IdentList(cl, first, expoone, expoall); FormalType(tp, 0); rdo := FALSE;
+    IdentList(cl, first, dmy, dmy); FormalType(tp, 0, expoone, expoall); rdo := FALSE;
     IF (cl = ORB.Var) & (tp.form >= ORB.Array) THEN cl := ORB.Par; rdo := TRUE END ;
     IF (tp.form = ORB.Array) & (tp.len < 0) OR (tp.form = ORB.Record) THEN
       parsize := 2*ORG.WordSize  (*open array or record, needs second word for length or type tag*)
@@ -786,14 +786,14 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     IF adr >= 52 THEN ORS.Mark("too many parameters") END
   END FPSection;
 
-  PROCEDURE ProcedureType(ptype: ORB.Type; VAR parblksize: LONGINT);
+  PROCEDURE ProcedureType(ptype: ORB.Type; VAR parblksize: LONGINT; expoone, expoall: BOOLEAN);
     VAR obj: ORB.Object; size: LONGINT; nofpar: INTEGER;
   BEGIN ptype.base := ORB.noType; size := parblksize; nofpar := 0; ptype.dsc := NIL;
     IF sym = ORS.lparen THEN
       ORS.Get(sym);
       IF sym = ORS.rparen THEN ORS.Get(sym)
-      ELSE FPSection(size, nofpar);
-        WHILE sym = ORS.semicolon DO ORS.Get(sym); FPSection(size, nofpar) END ;
+      ELSE FPSection(size, nofpar, expoone, expoall);
+        WHILE sym = ORS.semicolon DO ORS.Get(sym); FPSection(size, nofpar, expoone, expoall) END ;
         Check(ORS.rparen, "no )")
       END ;
       IF sym = ORS.colon THEN  (*function*)
@@ -804,13 +804,16 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
             ORS.Mark("illegal function type")
           END
         ELSE ORS.Mark("type identifier expected")
+        END ;
+        IF expoone & (obj.type.mno <= 0) & (obj.type.typobj # NIL) & ~obj.type.typobj.expo THEN
+          ORS.Mark("return type not exported")
         END
       END
     END ;
     ptype.nofpar := nofpar; parblksize := size
   END ProcedureType;
 
-  PROCEDURE FormalType0(VAR typ: ORB.Type; dim: INTEGER);
+  PROCEDURE FormalType0(VAR typ: ORB.Type; dim: INTEGER; expoone, expoall: BOOLEAN);
     VAR obj: ORB.Object; dmy: LONGINT;
   BEGIN
     IF sym = ORS.ident THEN
@@ -820,13 +823,14 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       ORS.Get(sym); Check(ORS.of, "OF ?");
       IF dim >= 1 THEN ORS.Mark("multi-dimensional open arrays not implemented") END ;
       NEW(typ); typ.form := ORB.Array; typ.len := -1; typ.size := 2*ORG.WordSize; 
-      FormalType(typ.base, dim+1)
+      FormalType(typ.base, dim+1, expoone, expoall)
     ELSIF sym = ORS.procedure THEN
       ORS.Get(sym); ORB.OpenScope;
-      NEW(typ); typ.form := ORB.Proc; typ.size := ORG.WordSize; dmy := 0; ProcedureType(typ, dmy);
+      NEW(typ); typ.form := ORB.Proc; typ.size := ORG.WordSize; dmy := 0; ProcedureType(typ, dmy, expoone, expoall);
       typ.dsc := ORB.topScope.next; ORB.CloseScope
     ELSE ORS.Mark("identifier expected"); typ := ORB.noType
-    END
+    END ;
+    IF expoone & (typ.mno <= 0) & (typ.typobj # NIL) & ~typ.typobj.expo THEN ORS.Mark("formal type not exported") END
   END FormalType0;
 
   PROCEDURE CheckRecLevel(lev: INTEGER);
@@ -869,7 +873,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     ELSIF sym = ORS.procedure THEN
       ORS.Get(sym); ORB.OpenScope; INC(level);
       NEW(type); type.form := ORB.Proc; type.size := ORG.WordSize; dmy := 0;
-      ProcedureType(type, dmy); type.dsc := ORB.topScope.next; ORB.CloseScope; DEC(level)
+      ProcedureType(type, dmy, expoone, expoall); type.dsc := ORB.topScope.next; ORB.CloseScope; DEC(level)
     ELSE ORS.Mark("illegal type")
     END ;
     IF expoone & (type.mno <= 0) & (type.typobj # NIL) & ~type.typobj.expo THEN ORS.Mark("type not exported") END
@@ -1015,7 +1019,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         type.form := ORB.Proc; proc.type := type; proc.val := -1; proc.lev := level; proc.expo := expo;
         IF expo THEN proc.exno := exno; INC(exno) END ;
         ORB.OpenScope; INC(level); type.base := ORB.noType;
-        ProcedureType(type, parblksize); type.dsc := ORB.topScope.next  (*formal parameter list*)
+        ProcedureType(type, parblksize, expo, expo); type.dsc := ORB.topScope.next  (*formal parameter list*)
       ELSE  (*type-bound procedure*)
         ORB.NewMethod(rec, proc, redef, procid);
         IF rec.typobj.val > 0 THEN ORS.Mark("invalid method order") ELSE DisallowMethods(rec.base) END ;
@@ -1031,7 +1035,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
         IF typ.form = ORB.Record THEN INC(parblksize, 2*ORG.WordSize)  (*record, needs second word for type tag*)
         ELSE INC(parblksize, ORG.WordSize)
         END ;
-        ProcedureType(type, parblksize); type.dsc := ORB.topScope.next; INC(type.nofpar);  (*formal parameter list*)
+        ProcedureType(type, parblksize, expo, expo); type.dsc := ORB.topScope.next; INC(type.nofpar);  (*formal parameter list*)
         IF redef # NIL THEN  (*redefined method found*)
           IF redef.expo & typ.typobj.expo & ~proc.expo THEN ORS.Mark("overriding method must be exported")
           ELSIF ~EqualSignatures(redef.type, proc.type) THEN ORS.Mark("must match redefined method")
@@ -1145,7 +1149,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     Texts.Append(Oberon.Log, W.buf); Oberon.Collect(0); Oberon.Return(res)
   END Compile;
 
-BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 1.2.25"); Texts.WriteLn(W);
+BEGIN Texts.OpenWriter(W); Texts.WriteString(W, "OR Compiler  8.3.2020 / AP 19.9.25"); Texts.WriteLn(W);
   NEW(dummy); dummy.class := ORB.Var; dummy.type := ORB.intType;
   expression := expression0; Type := Type0; FormalType := FormalType0
 END ORP.

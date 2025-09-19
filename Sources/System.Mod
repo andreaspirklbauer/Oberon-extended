@@ -1,8 +1,8 @@
-MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 1.2.25 Extended Oberon*)
+MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 19.9.25 Extended Oberon*)
   IMPORT SYSTEM, Kernel, Disk, FileDir, Files, Modules,
     Input, Display, Viewers, Fonts, Texts, Oberon, MenuViewers, TextFrames;
 
-  CONST Version* = "Extended Oberon System  AP 1.2.25";
+  CONST Version* = "Extended Oberon System  AP 19.9.25";
     StandardMenu = "System.Close System.Copy System.Grow Edit.Search Edit.Store | System.Expand System.Spread System.Clone";
     LogMenu = "Edit.Locate Edit.Search System.Copy System.Grow System.Clear | System.Expand System.Spread System.Clone";
 
