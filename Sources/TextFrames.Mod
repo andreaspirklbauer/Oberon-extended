@@ -1,4 +1,4 @@
-MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
+MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
   IMPORT Input, Display, Viewers, Fonts, Texts, Oberon;
 
   CONST replace* = Texts.replace; insert* = Texts.insert; delete* = Texts.delete; unmark* = Texts.unmark;  (*message ids*)
@@ -333,7 +333,7 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
       org, org0, q: LONGINT; dy, i, k: INTEGER;
       lines: ARRAY K OF LineDesc;  (*cache to prevent re-reading of lines*)
   BEGIN (*dY # 0*)
-    IF (F.trailer.next # F.trailer) & (F.trailer.next.next # F.trailer) THEN
+    IF F.trailer.next # F.trailer THEN
       IF dY < 0 THEN dY := -dY;
         IF dY <= F.voff THEN ScrollDown(F, F.org, F.voff - dY, dY, lines, 0, 0)
         ELSIF F.org = 0 THEN ScrollDown(F, 0, 0, F.voff, lines, 0, 0)
@@ -505,17 +505,28 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
   END SetCaret;
 
   PROCEDURE TrackCaret* (F: Frame; X, Y: INTEGER; VAR keysum: SET);
-    VAR loc: Location; keys: SET;
+    VAR loc: Location; keys: SET; topY, botY: INTEGER;
   BEGIN
-    IF F.trailer.next # F.trailer THEN
+    IF F.trailer.next # F.trailer THEN topY := F.Y + F.H - F.top; botY := F.Y + F.bot;
       LocateChar(F, X - F.X, Y - F.Y, F.carloc);
       FlipCaret(F);
+      SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
-      REPEAT Input.Mouse(keys, X, Y); keysum := keysum + keys;
+      REPEAT Input.Mouse(keys, X, Y);
+        keysum := keysum + keys;
+        IF Y < botY THEN  (*scroll text up*)
+          FlipCaret(F); Oberon.FadeMouse;
+          Scroll(F, botY - Y); Y := botY;
+          FlipCaret(F)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
+          FlipCaret(F); Oberon.FadeMouse;
+          Scroll(F, topY - 1 - Y); Y := topY - 1;
+          FlipCaret(F)
+        END ;
         Oberon.DrawMouseArrow(X, Y); LocateChar(F, X - F.X, Y - F.Y, loc);
         IF loc.pos # F.carloc.pos THEN FlipCaret(F); F.carloc := loc; FlipCaret(F) END
       UNTIL keys = {};
-      F.hasCar := TRUE
+      SetChangeMark(F, F.text.changed); F.hasCar := TRUE
     END
   END TrackCaret;
 
@@ -618,14 +629,26 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
   END RemoveSelection;
 
   PROCEDURE TrackLine* (F: Frame; X, Y: INTEGER; VAR org: LONGINT; VAR keysum: SET);
-    VAR old, new: Location; keys: SET;
+    VAR old, new: Location; keys: SET; topY, botY: INTEGER;
   BEGIN
-    IF F.trailer.next # F.trailer THEN
+    IF F.trailer.next # F.trailer THEN topY := F.Y + F.H - F.top; botY := F.Y + F.bot;
       LocateLine(F, Y - F.Y, old);
       ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
+      SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
       REPEAT Input.Mouse(keys, X, Y);
         keysum := keysum + keys;
+        IF Y < botY THEN  (*scroll text up*)
+          ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
+          Oberon.FadeMouse;
+          Scroll(F, botY - Y); Y := botY;
+          ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
+          ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
+          Oberon.FadeMouse;
+          Scroll(F, topY - 1 - Y); Y := topY - 1;
+          ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
+        END ;
         Oberon.DrawMouse(ScrollMarker, X, Y);
         LocateLine(F, Y - F.Y, new);
         IF new.org # old.org THEN
@@ -635,20 +658,32 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
         END
       UNTIL keys = {};
       ReplConst(Display.white, F, F.X + F.left, F.Y + new.y - new.lin.dsr, new.lin.wid, 2, Display.invert);
-      org := new.org
+      SetChangeMark(F, F.text.changed); org := new.org
     ELSE org := 0
     END
   END TrackLine;
 
   PROCEDURE TrackWord* (F: Frame; X, Y: INTEGER; VAR pos: LONGINT; VAR keysum: SET);
-    VAR old, new: Location; keys: SET;
+    VAR old, new: Location; keys: SET; topY, botY: INTEGER;
   BEGIN
-    IF F.trailer.next # F.trailer THEN
+    IF F.trailer.next # F.trailer THEN topY := F.Y + F.H - F.top; botY := F.Y + F.bot;
       LocateString(F, X - F.X, Y - F.Y, old);
       ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
+      SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
       REPEAT
         Input.Mouse(keys, X, Y); keysum := keysum + keys;
+        IF Y < botY THEN  (*scroll text up*)
+          ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
+          Oberon.FadeMouse;
+          Scroll(F, botY - Y); Y := botY;
+          ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
+          ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
+          Oberon.FadeMouse;
+          Scroll(F, topY - 1 - Y); Y := topY - 1;
+          ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
+        END ;
         Oberon.DrawMouseArrow(X, Y);
         LocateString(F, X - F.X, Y - F.Y, new);
         IF new.pos # old.pos THEN
@@ -658,7 +693,7 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.10.24 Extended Oberon*)
         END
       UNTIL keys = {};
       ReplConst(Display.white, F, F.X + new.x, F.Y + new.y - new.lin.dsr, new.dx, 2, Display.invert);
-      pos := new.pos
+      SetChangeMark(F, F.text.changed); pos := new.pos
     ELSE pos := 0
     END
   END TrackWord;
