@@ -340,7 +340,7 @@ MODULE System; (*JG 3.10.90 / NW 12.10.93 / NW 20.6.2016 / AP 1.1.26 Extended Ob
       IF time >= 0 THEN
         Texts.OpenScanner(S, T, beg); Texts.Scan(S);
         IF (S.class = Texts.Name) OR (S.class = Texts.String) THEN
-          Modules.Select(S.s, on, this, clients, imports); handle(S.s); Texts.Scan(S)
+          Modules.Select(S.s, on, this, clients, imports); handle(S.s)
         END
       END
     ELSE
