@@ -512,16 +512,12 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       FlipCaret(F);
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
-      REPEAT Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
+      REPEAT
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
         IF Y < botY THEN  (*scroll text up*)
-          FlipCaret(F); Oberon.FadeMouse;
-          Scroll(F, botY - Y); Y := botY;
-          FlipCaret(F)
+          FlipCaret(F); Scroll(F, botY - Y); Y := botY; FlipCaret(F)
         ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
-          FlipCaret(F); Oberon.FadeMouse;
-          Scroll(F, topY - 1 - Y); Y := topY - 1;
-          FlipCaret(F)
+          FlipCaret(F); Scroll(F, topY - 1 - Y); Y := topY - 1; FlipCaret(F)
         END ;
         Oberon.DrawMouseArrow(X, Y); LocateChar(F, X - F.X, Y - F.Y, loc);
         IF loc.pos # F.carloc.pos THEN FlipCaret(F); F.carloc := loc; FlipCaret(F) END
@@ -586,22 +582,17 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {}; start := F.selbeg.pos;
       REPEAT prev := loc.pos;
-        Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
         IF Y < botY THEN  (*scroll text up*)
           IF (F.selbeg.org = F.selend.org) OR (prev <= start) THEN L := F.selbeg; R := F.selend
           ELSE R := F.selend; L.org := F.selend.org; L.pos := L.org; L.x := F.left
           END ;
-          FlipSelection(F, L, R); Oberon.FadeMouse;
-          Scroll(F, botY - Y); Y := botY;
-          FlipSelection(F, L, R)
+          FlipSelection(F, L, R); Scroll(F, botY - Y); Y := botY; FlipSelection(F, L, R)
         ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
           IF (F.selbeg.org = F.selend.org) OR (prev > start) THEN L := F.selbeg; R := F.selend
           ELSE L := F.selbeg; R.org := F.selbeg.org; R.pos := F.selbeg.lin.len; R.x := F.left + F.selbeg.lin.wid
           END ;
-          FlipSelection(F, L, R); Oberon.FadeMouse;
-          Scroll(F, topY - 1 - Y); Y := topY - 1;
-          FlipSelection(F, L, R)
+          FlipSelection(F, L, R); Scroll(F, topY - 1 - Y); Y := topY - 1; FlipSelection(F, L, R)
         END ;
         Oberon.DrawMouseArrow(X, Y);
         LocateChar(F, X - F.X, Y - F.Y, loc);
@@ -636,16 +627,14 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
-      REPEAT Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
+      REPEAT
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
         IF Y < botY THEN  (*scroll text up*)
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, botY - Y); Y := botY;
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
         ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, topY - 1 - Y); Y := topY - 1;
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
         END ;
@@ -672,15 +661,13 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
       REPEAT
-        Input.Mouse(keys, X, Y); keysum := keysum + keys;
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
         IF Y < botY THEN  (*scroll text up*)
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, botY - Y); Y := botY;
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
         ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, topY - 1 - Y); Y := topY - 1;
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
         END ;
@@ -978,6 +965,8 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
     END ;
     SetChangeMark(F, F.text.changed)
   END Update;
+
+  (*------------------text editor------------------------*)
 
   PROCEDURE Edit* (F: Frame; X, Y: INTEGER; Keys: SET);
     VAR M: CopyOverMsg;
