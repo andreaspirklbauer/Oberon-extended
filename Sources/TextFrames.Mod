@@ -203,7 +203,8 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
     END ;
     Validate(F.text, F.org);
     topY := F.Y + F.H - F.top; botY := F.Y + F.bot; L := F.trailer;
-    IF topY > botY THEN org := F.org; curY := topY + F.voff;
+    IF topY > botY THEN
+      org := F.org; curY := topY + F.voff;
       Texts.OpenReader(R, F.text, org); Texts.Read(R, nextCh);
       WHILE ~L.eot & (curY > botY) DO
         NewLine(F, l);
@@ -228,19 +229,19 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
     IF F.left >= barW THEN
       Display.ReplConst(Display.white, F.X + barW - 1, newY, 1, F.Y - newY, Display.invert)
     END ;
-    topY := F.Y + F.H - F.top; botY0 := F.Y + F.bot;
-    F.H := F.H + F.Y - newY; F.Y := newY; botY := F.Y + F.bot;
+    topY := F.Y + F.H - F.top; botY0 := F.Y + F.bot; F.H := F.H + F.Y - newY; F.Y := newY; botY := F.Y + F.bot;
     IF F.trailer.next = F.trailer THEN Validate(F.text, F.org) END ;
-    L := F.trailer; org := F.org; curY := topY + F.voff;
-    WHILE (L.next # F.trailer) & (curY > botY0) DO
-      L := L.next; org := org + L.len; curY := curY - L.lsp
-    END ;
-    IF (L # F.trailer) & (curY < botY0) THEN
-      Texts.OpenReader(R, F.text, org - L.len); Texts.Read(R, nextCh);
-      DisplayLine(F, L, R, F.X + F.left, curY + L.dsr, botY0, botY, 0)  (*old fractional bottom line*)
-    ELSE Texts.OpenReader(R, F.text, org); Texts.Read(R, nextCh)
-    END ;
+    L := F.trailer;
     IF topY > botY THEN
+      org := F.org; curY := topY + F.voff;
+      WHILE (L.next # F.trailer) & (curY > botY0) DO
+        L := L.next; org := org + L.len; curY := curY - L.lsp
+      END ;
+      IF (L # F.trailer) & (curY < botY0) THEN
+        Texts.OpenReader(R, F.text, org - L.len); Texts.Read(R, nextCh);
+        DisplayLine(F, L, R, F.X + F.left, curY + L.dsr, botY0, botY, 0)  (*old fractional bottom line*)
+      ELSE Texts.OpenReader(R, F.text, org); Texts.Read(R, nextCh)
+      END ;
       WHILE ~L.eot & (curY > botY) DO
         NewLine(F, l);
         PrepareLine(l, R);
@@ -257,7 +258,8 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
     VAR L: Line; curY, topY, botY: INTEGER;
   BEGIN F.H := F.H + F.Y - newY; F.Y := newY;
     topY := F.Y + F.H - F.top; botY := F.Y + F.bot; L := F.trailer;
-    IF topY > botY THEN curY := topY + F.voff;
+    IF topY > botY THEN
+      curY := topY + F.voff;
       WHILE (L.next # F.trailer) & (curY > botY) DO
         L := L.next; curY := curY - L.lsp
       END
@@ -512,16 +514,12 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       FlipCaret(F);
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
-      REPEAT Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
-        IF Y < botY THEN  (*scroll text up*)
-          FlipCaret(F); Oberon.FadeMouse;
-          Scroll(F, botY - Y); Y := botY;
-          FlipCaret(F)
-        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
-          FlipCaret(F); Oberon.FadeMouse;
-          Scroll(F, topY - 1 - Y); Y := topY - 1;
-          FlipCaret(F)
+      REPEAT
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
+        IF Y < botY THEN (*scroll text up*)
+          FlipCaret(F); Scroll(F, botY - Y); Y := botY; FlipCaret(F)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN (*scroll text down*)
+          FlipCaret(F); Scroll(F, topY - 1 - Y); Y := topY - 1; FlipCaret(F)
         END ;
         Oberon.DrawMouseArrow(X, Y); LocateChar(F, X - F.X, Y - F.Y, loc);
         IF loc.pos # F.carloc.pos THEN FlipCaret(F); F.carloc := loc; FlipCaret(F) END
@@ -586,22 +584,17 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {}; start := F.selbeg.pos;
       REPEAT prev := loc.pos;
-        Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
-        IF Y < botY THEN  (*scroll text up*)
-          IF (F.selbeg.org = F.selend.org) OR (prev <= start) THEN L := F.selbeg; R := F.selend
-          ELSE R := F.selend; L.org := F.selend.org; L.pos := L.org; L.x := F.left
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
+        IF Y < botY THEN (*scroll text up*) R := F.selend;
+          IF (F.selbeg.org = F.selend.org) OR (prev <= start) THEN L := F.selbeg
+          ELSE L.org := F.selend.org; L.pos := L.org; L.x := F.left
           END ;
-          FlipSelection(F, L, R); Oberon.FadeMouse;
-          Scroll(F, botY - Y); Y := botY;
-          FlipSelection(F, L, R)
-        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
-          IF (F.selbeg.org = F.selend.org) OR (prev > start) THEN L := F.selbeg; R := F.selend
-          ELSE L := F.selbeg; R.org := F.selbeg.org; R.pos := F.selbeg.lin.len; R.x := F.left + F.selbeg.lin.wid
+          FlipSelection(F, L, R); Scroll(F, botY - Y); Y := botY; FlipSelection(F, L, R)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN (*scroll text down*) L := F.selbeg;
+          IF (F.selbeg.org = F.selend.org) OR (prev > start) THEN R := F.selend
+          ELSE R.org := F.selbeg.org; R.pos := F.selbeg.lin.len; R.x := F.left + F.selbeg.lin.wid
           END ;
-          FlipSelection(F, L, R); Oberon.FadeMouse;
-          Scroll(F, topY - 1 - Y); Y := topY - 1;
-          FlipSelection(F, L, R)
+          FlipSelection(F, L, R); Scroll(F, topY - 1 - Y); Y := topY - 1; FlipSelection(F, L, R)
         END ;
         Oberon.DrawMouseArrow(X, Y);
         LocateChar(F, X - F.X, Y - F.Y, loc);
@@ -636,16 +629,14 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
-      REPEAT Input.Mouse(keys, X, Y);
-        keysum := keysum + keys;
-        IF Y < botY THEN  (*scroll text up*)
+      REPEAT
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
+        IF Y < botY THEN (*scroll text up*)
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, botY - Y); Y := botY;
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
-        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN (*scroll text down*)
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, topY - 1 - Y); Y := topY - 1;
           ReplConst(Display.white, F, F.X + F.left, F.Y + old.y - old.lin.dsr, old.lin.wid, 2, Display.invert)
         END ;
@@ -672,15 +663,13 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
       SetChangeMark(F, FALSE); Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
       keysum := {};
       REPEAT
-        Input.Mouse(keys, X, Y); keysum := keysum + keys;
-        IF Y < botY THEN  (*scroll text up*)
+        Input.Mouse(keys, X, Y); keysum := keysum + keys; Oberon.FadeMouse;
+        IF Y < botY THEN (*scroll text up*)
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, botY - Y); Y := botY;
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
-        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN  (*scroll text down*)
+        ELSIF (Y > topY - 1) & ((F.org > 0) OR (F.voff > 0)) THEN (*scroll text down*)
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert);
-          Oberon.FadeMouse;
           Scroll(F, topY - 1 - Y); Y := topY - 1;
           ReplConst(Display.white, F, F.X + old.x, F.Y + old.y - old.lin.dsr, old.dx, 2, Display.invert)
         END ;
@@ -978,6 +967,8 @@ MODULE TextFrames; (*JG 8.10.90 / NW 16.11.2015 / AP 1.1.26 Extended Oberon*)
     END ;
     SetChangeMark(F, F.text.changed)
   END Update;
+
+  (*------------------text editor------------------------*)
 
   PROCEDURE Edit* (F: Frame; X, Y: INTEGER; Keys: SET);
     VAR M: CopyOverMsg;
