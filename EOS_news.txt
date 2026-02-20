@@ -91,4 +91,5 @@
 2025-01-27 ORG - Allow assignments to dynamic open arrays in ORG.StoreStruct (TYPE A = ARRAY OF CHAR; P = POINTER TO A; VAR p: P; NEW(p, 8); p^ := array)
 2025-02-01 ORP - Disallow passing an open array parameter to a procedure expecting a fixed-length array of BYTE (ORP.Parameter)
 2025-09-19 ORP - Report a compile-time error if a formal parameter or the result type of an exported procedure is not of an exported data type
-2026-01-01 TextFrames - Add continous scrolling to TrackCaret, TrackWord and TrackLine (in analogy to TrackSelection)
+2026-01-01 TextFrames - Add continous scrolling to TrackCaret, TrackWord and TrackLine (similar to TrackSelection)
+2026-01-01 TextFrames - Precompute invariant values in loops (−4% code, ~4% faster)
