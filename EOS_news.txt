@@ -93,3 +93,4 @@
 2025-09-19 ORP - Report a compile-time error if a formal parameter or the result type of an exported procedure is not of an exported data type
 2026-01-01 TextFrames - Add continous scrolling to TrackCaret, TrackWord and TrackLine (similar to TrackSelection)
 2026-01-01 TextFrames - Precompute invariant values in loops (4% less code generated, 5% faster execution)
+2026-09-08 ORB - Set field lev in ORB.Import for previously re-imported types that were converted to direct imports
