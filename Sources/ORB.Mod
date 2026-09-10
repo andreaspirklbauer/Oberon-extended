@@ -280,9 +280,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 19.5.2
         Read(R, class);
         WHILE class # 0 DO
           Files.ReadString(R, name); InType(R, thismod, t);
-          IF t.mno < 0 THEN  (*type already re-imported via other modules*)
-            t.mno := -t.mno; t.typobj.lev := -thismod.lev
-          ELSE
+          IF t.mno < 0 THEN t.mno := -t.mno; t.typobj.lev := -thismod.lev  (*already re-imported*)
+          ELSE (*insert new object in object list of thismod*)
             NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
             IF class = Const THEN Files.ReadNum(R, obj.val)
             ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
