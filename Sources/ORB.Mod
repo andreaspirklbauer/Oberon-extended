@@ -1,4 +1,4 @@
-MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 19.5.25 Extended Oberon*)
+MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26 Extended Oberon*)
   IMPORT Files, ORS;
   (*Definition of data types Object and Type, which together form the data structure
     called "symbol table". Contains procedures for creation of Objects, and for search:
@@ -283,7 +283,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 19.5.2
           IF t.mno < 0 THEN t.mno := -t.mno; t.typobj.lev := -thismod.lev  (*already re-imported*)
           ELSE (*insert new object in object list of thismod*)
             NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
-            IF class = Const THEN Files.ReadNum(R, obj.val)
+            IF class = Const THEN
+              IF obj.type.form = Real THEN Files.ReadInt(R, obj.val) ELSE Files.ReadNum(R, obj.val) END
             ELSIF class = Var THEN Files.ReadNum(R, obj.val); obj.rdo := TRUE
             ELSIF t.typobj = NIL THEN t.typobj := obj
             END ;
@@ -387,6 +388,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 19.5.2
         OutType(R, obj.type);
         IF obj.class = Const THEN
           IF obj.type.form = Proc THEN Files.WriteNum(R, obj.exno)
+          ELSIF obj.type.form = Real THEN Files.WriteInt(R, obj.val)
           ELSIF obj.type.form = String THEN Files.WriteNum(R, obj.exno + obj.val DIV C20 (*len*) * C20)
           ELSE Files.WriteNum(R, obj.val)
           END
