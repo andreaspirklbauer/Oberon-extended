@@ -1,4 +1,4 @@
-MODULE Graphics;   (*NW 21.12.89 / 18.11.201 / 8.4.2016 / AP 15.9.20 Extended Oberon*)
+MODULE Graphics;   (*NW 21.12.89 / 18.11.201 / 8.4.2016 / AP 1.10.26 Extended Oberon*)
   IMPORT SYSTEM, Files, Modules, Fonts, (*Printer,*) Texts, Oberon;
 
   CONST NameLen* = 32; GraphFileId = 0FAX; LibFileId = 0FBX;
@@ -60,6 +60,8 @@ MODULE Graphics;   (*NW 21.12.89 / 18.11.201 / 8.4.2016 / AP 15.9.20 Extended Ob
         lib: ARRAY 4 OF Library;
         class: ARRAY 6 OF Modules.Command
       END;
+
+    DrawMethod* = PROCEDURE (obj: Object; VAR msg: Msg);
 
     MethodDesc* = RECORD
         module*, allocator*: Name;
@@ -668,7 +670,7 @@ MODULE Graphics;   (*NW 21.12.89 / 18.11.201 / 8.4.2016 / AP 15.9.20 Extended Ob
   BEGIN
   END Notify;
 
-  PROCEDURE InstallDrawMethods*(drawLine, drawCaption, drawMacro: PROCEDURE (obj: Object; VAR msg: Msg));
+  PROCEDURE InstallDrawMethods*(drawLine, drawCaption, drawMacro: DrawMethod);
   BEGIN LineMethod.draw := drawLine; CapMethod.draw := drawCaption; MacMethod.draw := drawMacro
   END InstallDrawMethods;
 

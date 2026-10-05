@@ -97,3 +97,4 @@
 2026-09-12 ORB - Avoid searching for a re-exported module in ORB.OutType by supplying type nodes t with a back-pointer t.typmod
 2026-09-14 ORB - Revert to fixed-width integer encoding for REAL constants because obj.val is a LONGINT containing their 32-bit representation
 2026-10-01 ORP - Add a check whether the type T in a type test x IS T is indeed a type (ORP.expression0)
+2026-10-05 ORP - Disallow procedure headings as formal parameters, bringing the compiler in line with the language definition

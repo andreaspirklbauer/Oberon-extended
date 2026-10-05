@@ -67,8 +67,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
   PROCEDURE CheckSetVal(VAR x: ORG.Item);
   BEGIN
     IF x.type.form # ORB.Int THEN ORS.Mark("not Int"); x.type := ORB.setType
-    ELSIF x.mode = ORB.Const THEN
-      IF (x.a < 0) OR (x.a >= 32) THEN ORS.Mark("invalid set") END
+    ELSIF (x.mode = ORB.Const) & ((x.a < 0) OR (x.a >= 32)) THEN ORS.Mark("invalid set")
     END 
   END CheckSetVal;
 
@@ -827,10 +826,6 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       IF dim >= 1 THEN ORS.Mark("multi-dimensional open arrays not implemented") END ;
       NEW(typ); typ.form := ORB.Array; typ.len := -1; typ.size := 2*ORG.WordSize;
       FormalType(typ.base, dim+1, expoone, expoall)
-    ELSIF sym = ORS.procedure THEN
-      ORS.Get(sym); ORB.OpenScope;
-      NEW(typ); typ.form := ORB.Proc; typ.size := ORG.WordSize; dmy := 0; ProcedureType(typ, dmy, expoone, expoall);
-      typ.dsc := ORB.topScope.next; ORB.CloseScope
     ELSE ORS.Mark("identifier expected"); typ := ORB.noType
     END ;
     IF expoone & (typ.mno <= 0) & (typ.typobj # NIL) & ~typ.typobj.expo THEN ORS.Mark("formal type not exported") END
