@@ -1,4 +1,4 @@
-MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26 Extended Oberon*)
+MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.10.26 Extended Oberon*)
   IMPORT Files, ORS;
   (*Definition of data types Object and Type, which together form the data structure
     called "symbol table". Contains procedures for creation of Objects, and for search:
@@ -7,7 +7,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26
     Import and Export. This module contains the list of standard identifiers, with which
     the symbol table (universe), and that of the pseudo-module SYSTEM are initialized. *)
 
-  CONST versionkey* = 1; maxTypTab = 64; C20 = 100000H;
+  CONST versionkey* = 1; maxTypTab = 128; C20 = 100000H;
     (* class values*) Head* = 0;
       Const* = 1; Var* = 2; Par* = 3; Fld* = 4; Typ* = 5;
       SProc* = 6; SFunc* = 7; Mod* = 8;
@@ -208,22 +208,20 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26
   BEGIN Read(R, ref);
     IF ref < 0 THEN T := typtab[-ref]  (*already read*)
     ELSE NEW(t); T := t; t.mno := thismod.lev; t.typmod := thismod; t.orgref := ref;
-      IF ref > 0 THEN (*named type*)
-        Files.ReadString(R, modname);
-        IF modname[0] # 0X THEN (*re-import*)
-          Files.ReadInt(R, key); Files.ReadString(R, name); Read(R, orgref);
-          mod := ThisModule(modname, modname, FALSE, key);
-          obj := mod.dsc;  (*search type*)
-          WHILE (obj # NIL) & (obj.name # name) DO obj := obj.next END ;
-          IF obj # NIL THEN T := obj.type  (*type object found in object list of mod*)
-          ELSE (*insert new type object in object list of mod*)
-            NEW(obj); obj.name := name; obj.class := Typ; obj.next := mod.dsc; mod.dsc := obj;
-            obj.type := t; t.mno := mod.lev; t.typobj := obj; t.typmod := mod; t.orgref := orgref
-          END
-        ELSIF typtab[ref] # NIL THEN T := typtab[ref]  (*already re-imported*)
-        END ;
-        typtab[ref] := T
+      Files.ReadString(R, modname);
+      IF modname[0] # 0X THEN (*re-import*)
+        Files.ReadInt(R, key); Files.ReadString(R, name); Read(R, orgref);
+        mod := ThisModule(modname, modname, FALSE, key);
+        obj := mod.dsc;  (*search type*)
+        WHILE (obj # NIL) & (obj.name # name) DO obj := obj.next END ;
+        IF obj # NIL THEN T := obj.type  (*type object found in object list of mod*)
+        ELSE (*insert new type object in object list of mod*)
+          NEW(obj); obj.name := name; obj.class := Typ; obj.next := mod.dsc; mod.dsc := obj;
+          obj.type := t; t.mno := mod.lev; t.typobj := obj; t.typmod := mod; t.orgref := orgref
+        END
+      ELSIF typtab[ref] # NIL THEN T := typtab[ref]  (*already re-imported*)
       END ;
+      typtab[ref] := T;
       Read(R, form); t.form := form;
       IF form = Pointer THEN InType(R, thismod, t.base); t.size := 4
       ELSIF form = Array THEN InType(R, thismod, t.base); Files.ReadNum(R, t.len); Files.ReadNum(R, t.size)
@@ -280,7 +278,8 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26
         Read(R, class);
         WHILE class # 0 DO
           Files.ReadString(R, name); InType(R, thismod, t);
-          IF t.mno < 0 THEN t.mno := -t.mno; t.typobj.lev := -thismod.lev  (*already re-imported*)
+          IF t.mno < 0 THEN (*already re-imported*)
+            t.mno := -t.mno; t.typobj.lev := -thismod.lev
           ELSE (*insert new object in object list of thismod*)
             NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
             IF class = Const THEN
@@ -331,15 +330,12 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.9.26
 
   BEGIN
     IF t.ref > 0 THEN (*type was already output*) Write(R, -t.ref)
-    ELSE obj := t.typobj;
-      IF obj # NIL THEN (*named type*)
-        Write(R, Ref); t.ref := Ref; INC(Ref);
-        IF t.mno > 0 THEN (*re-export*)
-          Files.WriteString(R, t.typmod(Module).orgname); Files.WriteInt(R, t.typmod.val);
-          Files.WriteString(R, obj.name); Write(R, t.orgref)
-        ELSE Write(R, 0)
-        END
-      ELSE (*anonymous*) Write(R, 0)
+    ELSE Write(R, Ref); t.ref := Ref; INC(Ref);
+      obj := t.typobj;
+      IF (obj # NIL) & (t.mno > 0) THEN (*re-export*)
+        Files.WriteString(R, t.typmod(Module).orgname); Files.WriteInt(R, t.typmod.val);
+        Files.WriteString(R, obj.name); Write(R, t.orgref)
+      ELSE Write(R, 0)
       END ;
       Write(R, t.form);
       IF t.form = Pointer THEN OutType(R, t.base)
