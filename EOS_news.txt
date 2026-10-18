@@ -99,3 +99,4 @@
 2026-10-01 ORP - Add a check whether the type T in a type test x IS T is indeed a type (ORP.expression0)
 2026-10-05 ORP - Disallow procedure headings as formal parameters, bringing the compiler in line with the language definition
 2026-10-14 ORB - Recognize multiple variables whose identifiers appear on the same line as having the same type, even if their type is anonymous
+2026-10-18 ORTool - Improve ORTool.DecSym output readability by introducing indentation levels
