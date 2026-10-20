@@ -101,3 +101,4 @@
 2026-10-14 ORB - Recognize multiple variables whose identifiers appear on the same line as having the same type, even if their type is anonymous
 2026-10-18 ORB - Write reference numbers only for named types, arrays, and records (still recognizing a*, b*: RECORD .. END as the same type)
 2026-10-19 ORB - Omit unnecessary reference numbers for open array parameters as in PROCEDURE P(s: ARRAY OF CHAR) (ORB.OutType)
+2026-10-20 ORB - Revert the last change to avoid relying on the compiler treating equal signatures as the same type
