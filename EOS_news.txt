@@ -102,3 +102,4 @@
 2026-10-18 ORB - Write reference numbers only for named types, arrays, and records (still recognizing a*, b*: RECORD .. END as the same type)
 2026-10-19 ORB - Omit unnecessary reference numbers for open array parameters as in PROCEDURE P(s: ARRAY OF CHAR) (ORB.OutType)
 2026-10-20 ORB - Revert the last change to avoid relying on the compiler treating equal signatures as the same type
+2026-10-21 ORP - Report a compile time error if a record parameter subject to a type test is not a VAR parameter (ORP.TypeTest, ORP.FPSection)
