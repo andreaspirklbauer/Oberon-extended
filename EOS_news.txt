@@ -103,3 +103,4 @@
 2026-10-19 ORB - Omit unnecessary reference numbers for open array parameters as in PROCEDURE P(s: ARRAY OF CHAR) (ORB.OutType)
 2026-10-20 ORB - Revert the last change to avoid relying on the compiler treating equal signatures as the same type
 2026-10-21 ORP - Report a compile time error if a record parameter subject to a type test is not a VAR parameter (ORP.TypeTest, ORP.FPSection)
+2026-11-01 ORB - Write reference numbers to the symbol file for anonymous pointer, array or record types, but not for anonymous procedure types
