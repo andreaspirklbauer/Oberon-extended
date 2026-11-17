@@ -81,7 +81,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
     END
   END NewObj;
 
-  PROCEDURE thisObj*(): Object;
+  PROCEDURE thisObj*(): Object;  (*return the Object with name ORS.id*)
     VAR s, x: Object;
   BEGIN s := topScope;
     REPEAT x := s.next;
@@ -91,21 +91,21 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
     RETURN x
   END thisObj;
 
-  PROCEDURE thisimport*(mod: Object): Object;
+  PROCEDURE thisimport*(mod: Object): Object;  (*return the import with name ORS.id*)
     VAR obj: Object;
   BEGIN (*mod.rdo*) obj := mod.dsc;
     WHILE (obj # NIL) & (obj.name # ORS.id) DO obj := obj.next END ;
     RETURN obj
   END thisimport;
 
-  PROCEDURE thisfield*(rec: Type): Object;
+  PROCEDURE thisfield*(rec: Type): Object;  (*return the field with name ORS.id*)
     VAR fld: Object;
   BEGIN fld := rec.dsc;
     WHILE (fld # NIL) & (fld.name # ORS.id) DO fld := fld.next END ;
     RETURN fld
   END thisfield;
 
-  PROCEDURE NofMethods*(rec: Type): INTEGER;  (*number of methods bound to rec and its base types*)
+  PROCEDURE NofMethods*(rec: Type): INTEGER;  (*return the number of methods bound to rec and its base types*)
     VAR fld: Object; max: INTEGER;
   BEGIN fld := rec.dsc; max := -1;
     WHILE fld # NIL DO
@@ -196,7 +196,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
   PROCEDURE Read(VAR R: Files.Rider; VAR x: INTEGER);
     VAR b: BYTE;
   BEGIN Files.ReadByte(R, b);
-    IF b < 80H THEN x := b ELSE x := b - 100H END
+    IF b < 80H THEN x := b ELSE x := b - 100H END  (*sign extension*)
   END Read;
 
   PROCEDURE InType(VAR R: Files.Rider; thismod: Object; VAR T: Type);
