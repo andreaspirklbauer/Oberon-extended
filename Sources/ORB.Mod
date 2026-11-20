@@ -196,7 +196,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
   PROCEDURE Read(VAR R: Files.Rider; VAR x: INTEGER);
     VAR b: BYTE;
   BEGIN Files.ReadByte(R, b);
-    IF b < 80H THEN x := b ELSE x := b - 100H END  (*sign extension*)
+    IF b < 80H THEN x := b ELSE x := b - 100H END
   END Read;
 
   PROCEDURE InType(VAR R: Files.Rider; thismod: Object; VAR T: Type);
@@ -217,8 +217,9 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
           WHILE (obj # NIL) & (obj.name # name) DO obj := obj.next END ;
           IF obj # NIL THEN T := obj.type  (*type object found in object list of mod*)
           ELSE (*insert new type object in object list of mod*)
-            NEW(obj); obj.name := name; obj.class := Typ; obj.next := mod.dsc; mod.dsc := obj;
-            obj.type := t; t.mno := mod.lev; t.typobj := obj; t.typmod := mod; t.orgref := orgref
+            NEW(obj); obj.class := Typ; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
+            t.mno := mod.lev; t.typobj := obj; t.typmod := mod; t.orgref := orgref;
+            obj.next := mod.dsc; mod.dsc := obj
           END
         ELSIF typtab[ref] # NIL THEN T := typtab[ref]  (*already re-imported*)
         END ;
@@ -280,8 +281,7 @@ MODULE ORB;   (*NW 25.6.2014  / AP 4.3.2020 / 5.3.2019  in Oberon-07 / AP 1.11.2
         Read(R, class);
         WHILE class # 0 DO
           Files.ReadString(R, name); InType(R, thismod, t);
-          IF t.mno < 0 THEN (*already re-imported*)
-            t.mno := -t.mno; t.typobj.lev := -thismod.lev
+          IF t.mno < 0 THEN t.mno := -t.mno  (*already re-imported*)
           ELSE (*insert new object in object list of thismod*)
             NEW(obj); obj.class := class; obj.name := name; obj.type := t; obj.lev := -thismod.lev;
             IF class = Const THEN
