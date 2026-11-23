@@ -90,6 +90,11 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
     END
   END CheckExport;
 
+  PROCEDURE CheckExported(expo: BOOLEAN; type: ORB.Type; msg: ARRAY OF CHAR);
+  BEGIN
+    IF expo & (type.mno <= 0) & (type.typobj # NIL) & ~type.typobj.expo THEN ORS.Mark(msg) END
+  END CheckExported;
+
   PROCEDURE IsExtension(t0, t1: ORB.Type): BOOLEAN;
   BEGIN (*t1 is an extension of t0*)
     RETURN (t0 = t1) OR (t1 # NIL) & IsExtension(t0, t1.base)
@@ -807,9 +812,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
           END
         ELSE ORS.Mark("type identifier expected")
         END ;
-        IF expoone & (obj.type.mno <= 0) & (obj.type.typobj # NIL) & ~obj.type.typobj.expo THEN
-          ORS.Mark("return type not exported")
-        END
+        CheckExported(expoone, obj.type, "return type not exported")
       END
     END ;
     ptype.nofpar := nofpar; parblksize := size
@@ -828,7 +831,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       FormalType(typ.base, dim+1, expoone, expoall)
     ELSE ORS.Mark("identifier expected"); typ := ORB.noType
     END ;
-    IF expoone & (typ.mno <= 0) & (typ.typobj # NIL) & ~typ.typobj.expo THEN ORS.Mark("formal type not exported") END
+    CheckExported(expoone, typ, "formal type not exported")
   END FormalType0;
 
   PROCEDURE CheckRecLevel(lev: INTEGER);
@@ -874,7 +877,7 @@ MODULE ORP; (*N. Wirth 1.7.97 / 8.3.2020  Oberon compiler for RISC in Oberon-07 
       ProcedureType(type, dmy, expoone, expoall); type.dsc := ORB.topScope.next; ORB.CloseScope; DEC(level)
     ELSE ORS.Mark("illegal type")
     END ;
-    IF expoone & (type.mno <= 0) & (type.typobj # NIL) & ~type.typobj.expo THEN ORS.Mark("type not exported") END
+    CheckExported(expoone, type, "type not exported")
   END Type0;
 
   PROCEDURE Declarations(VAR varsize: LONGINT);
